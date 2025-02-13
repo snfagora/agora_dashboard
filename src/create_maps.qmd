@@ -1,0 +1,48 @@
+---
+title: "create_maps"
+format: html
+editor: visual
+---
+
+# Load pkgs 
+
+```{r}
+if (!require(pacman)) install.packages("pacman")
+
+pacman::p_load(leaflet, sf, dplyr, tigris, here, glue)
+```
+
+# Load data 
+
+```{r}
+# Load county-level outcomes
+df <- read.csv(here("raw_data", "cnty_counts_cov.csv"))
+
+#list.files(here("raw_data"))
+
+# Load county shapefiles from `tigris`
+counties <- counties(cb = TRUE, resolution = "20m")
+```
+
+# Create maps 
+
+```{r}
+# Ensure FIPS codes match
+df$fips <- sprintf("%05d", df$FIPS)
+
+# Merge datasets
+map_data <- left_join(counties, df, by = c("GEOID" = "fips"))
+
+# Create interactive map
+leaflet(map_data) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~colorQuantile("YlOrRd", civic_opp_sum_normalized, n = 5)(civic_opp_sum_normalized),
+    fillOpacity = 0.7,
+    color = "#BDBDC1",
+    weight = 1
+  ) %>%
+  addLegend(pal = colorQuantile("YlOrRd", map_data$civic_opp_sum_normalized, n = 5),
+            values = map_data$value,
+            title = "Civic opportunity index")
+```
