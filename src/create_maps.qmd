@@ -15,7 +15,8 @@ knitr::opts_chunk$set(echo=FALSE) # not showing the code
 
 if (!require(pacman)) install.packages("pacman")
 
-pacman::p_load(leaflet, sf, readr, dplyr, here, glue
+pacman::p_load(leaflet, sf, readr, dplyr, here, glue,
+               shiny
                #tigris
                )
 ```
@@ -66,8 +67,10 @@ map_data <- map_data %>%
 
 # Define a color palette using colorFactor
 pal <- colorFactor("YlOrRd", domain = map_data$civic_opp_category)
+```
 
-leaflet(map_data) %>%
+```{r}
+civic_map <- leaflet(map_data) %>%
   addTiles() %>%
   addPolygons(
     fillColor = ~pal(civic_opp_category),
@@ -80,7 +83,8 @@ leaflet(map_data) %>%
     color = "black",  # Boundary color
     weight = 1,
     fillOpacity = 0,  # Transparent fill
-    label = ~NAME  # Show state names on hover
+    label = ~NAME,  # Show state names on hover
+    layerId = ~NAME
   ) %>%
   addLegend(
     pal = pal,
@@ -90,4 +94,37 @@ leaflet(map_data) %>%
       paste0(cuts)  # Ensures numbers 1-5 appear in the legend
     }
   )
+```
+
+# Create an UI 
+
+```{r}
+
+ui <- fluidPage(
+  leafletOutput("civic_map"),
+  verbatimTextOutput("info")
+)
+
+server <- function(input, output, session) {
+  
+  output$civic_map <- renderLeaflet({
+    civic_map %>%
+      setView(lng = -95.7129, lat = 37.0902, zoom = 4) # Centered on the USA
+  })
+  
+  observeEvent(input$civic_map_click, {
+    click <- input$civic_map_click
+    if (!is.null(click)) {
+      
+      info_text <- paste("Latitude:", 
+                         round(click$lat, 2), 
+                         "Longitude:", 
+                         round(click$lng, 2))
+      
+      output$info <- renderText(info_text)
+    }
+  })
+}
+
+shinyApp(ui, server)
 ```
