@@ -23,15 +23,37 @@ states <- readr::read_rds(here::here("raw_data", "states.rds")) %>% st_transform
 org_type_data <- read.csv(here::here("raw_data", "cnty_civic_org_type.csv"))
 
 # Aggregate primary org type
-aggregated_data <- org_type_data %>%
+top3_orgs <- org_type_data %>%
   filter(!is.na(class)) %>%
   group_by(FIPS, class) %>%
   summarise(freq = sum(freq, na.rm = TRUE), .groups = "drop") %>%
+  
   group_by(FIPS) %>%
-  mutate(primary_org_type = class[which.max(freq)]) %>%
-  ungroup() %>%
-  select(FIPS, primary_org_type) %>%
-  distinct()
+  mutate(
+    total_freq = sum(freq),
+    pct = freq / total_freq
+  ) %>%
+  arrange(FIPS, desc(freq)) %>%
+  slice_head(n = 3) %>%
+  mutate(rank = row_number()) %>%
+  ungroup()
+
+aggregated_data <- top3_orgs %>%
+  mutate(
+    rank_label = case_when(
+      rank == 1 ~ "primary",
+      rank == 2 ~ "second",
+      rank == 3 ~ "third"
+    )
+  ) %>%
+  select(FIPS, rank_label, class, pct) %>%
+  pivot_wider(
+    names_from = rank_label,
+    values_from = c(class, pct),
+    names_glue = "{rank_label}_org_{.value}"
+  ) 
+
+aggregated_data$primary_org_pct<- glue("{round(aggregated_data$primary_org_pct, 2)*100}%")
 
 # Join data
 map_data_civic <- left_join(counties, civic_data, by = c("GEOID" = "fips")) %>%
@@ -62,7 +84,7 @@ map_data_orgtype <- left_join(counties, aggregated_data, by = c("GEOID" = "fips"
 
 map_data_orgtype <- map_data_orgtype %>%
   mutate(
-    primary_org_type = fct_explicit_na(primary_org_type, na_level = "NA")
+    primary_org_class = fct_explicit_na(primary_org_class, na_level = "NA")
   )
 
 # Define color palettes
@@ -97,7 +119,7 @@ org_colors <- c(
 
 # Re-factor to keep all levels, even if not used
 map_data_orgtype <- map_data_orgtype %>%
-  mutate(primary_org_type = factor(primary_org_type, levels = org_levels))
+  mutate(primary_org_class = factor(primary_org_class, levels = org_levels))
 
 pal_primary_org <- colorFactor(
   palette = org_colors,
@@ -143,12 +165,22 @@ map2 <- leaflet(map_data_orgtype, options = leafletOptions(minZoom = 3, zoomCont
     options = pathOptions(clickable = FALSE)
   ) %>%
   addPolygons(
-    fillColor = ~pal_primary_org(primary_org_type),
-    fillOpacity = 0.7, color = "#BDBDC1", weight = 1,
-    popup = ~glue("<b>{NAMELSAD}</b><br/>Primary Org Type: {primary_org_type}"),
+    fillColor = ~pal_primary_org(primary_org_class),
+    fillOpacity = 0.7,
+    color = "#BDBDC1",
+    weight = 1,
+    popup = ~glue(
+      "<b>{NAMELSAD}</b><br/>
+      Primary Organization Type: {primary_org_class}<br/>
+      Secondary Organization Type: {secondary_org_class}<br/>
+      Third Organization Type: {third_org_class}<br/>
+      Primary Organization %: {round(primary_org_pct * 100, 1)}%<br/>
+      Secondary Organization %: {round(secondary_org_pct * 100, 1)}%<br/>
+      Third Organization %: {round(third_org_pct * 100, 1)}%"
+    ),
     label = ~NAMELSAD
   ) %>%
-  addLegend(pal = pal_primary_org, values = map_data_orgtype$primary_org_type,
+  addLegend(pal = pal_primary_org, values = map_data_orgtype$primary_org_class,
             title = "Primary Organization Type", position = "bottomright") %>%
   setView(lng = -95.7129, lat = 37.0902, zoom = 4)
 ```
