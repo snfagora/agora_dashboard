@@ -169,12 +169,9 @@ map2 <- leaflet(map_data_orgtype, options = leafletOptions(minZoom = 3, zoomCont
     weight = 1,
     popup = ~glue(
       "<b>{NAMELSAD}</b><br/>
-      Primary Organization Type: {primary_org_class}<br/>
-      Secondary Organization Type: {second_org_class}<br/>
-      Third Organization Type: {third_org_class}<br/>
-      Primary Organization %: {round(primary_org_pct * 100, 1)}%<br/>
-      Secondary Organization %: {round(second_org_pct * 100, 1)}%<br/>
-      Third Organization %: {round(third_org_pct * 100, 1)}%"
+      Primary Organization Type: {primary_org_class} ({round(primary_org_pct * 100, 1)}%)<br/>
+      Secondary Organization Type: {second_org_class} ({round(second_org_pct * 100, 1)}%)<br/>
+      Third Organization Type: {third_org_class} ({round(third_org_pct * 100, 1)}%)"
     ),
     label = ~NAMELSAD
   ) %>%
