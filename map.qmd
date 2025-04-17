@@ -81,7 +81,7 @@ pal_primary_org <- colorFactor(
     "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
     "#FB9A99", "#B3DE69", "#FF69B4"
   ),
-  domain = levels(map_data$primary_org_type),
+  domain = levels(map_data_orgtype$primary_org_type),
   na.color = "#CCCCCC"
 )
 pal_primary_org <- colorFactor(
