@@ -34,9 +34,7 @@ aggregated_data <- org_type_data %>%
   distinct()
 
 # Join data
-joined_data <- left_join(civic_data, aggregated_data, by = "FIPS")
-
-map_data <- left_join(counties, joined_data, by = c("GEOID" = "fips")) %>%
+map_data_civic <- left_join(counties, civic_data, by = c("GEOID" = "fips")) %>%
   st_as_sf() %>%
   mutate(
     civic_opp_category = ntile(civic_opp_sum_normalized, 5),
@@ -54,11 +52,13 @@ map_data <- left_join(counties, joined_data, by = c("GEOID" = "fips")) %>%
       TRUE ~ "Bottom 5%"
     )
   ) %>%
-  st_simplify(dTolerance = 0.01)
+  st_simplify(dTolerance = 0.01) 
 
-# Split into two dataframes
-map_data_civic <- map_data
-map_data_orgtype <- map_data
+aggregated_data$fips <- sprintf("%05d", aggregated_data$FIPS)
+
+map_data_orgtype <- left_join(counties, aggregated_data, by = c("GEOID" = "fips")) %>%
+  st_as_sf() %>%
+  st_simplify(dTolerance = 0.01)
 
 # Define color palettes
 pal_green <- colorFactor(c("#D0F1C7", "#4CAF50", "#006400"), domain = map_data$civic_opp_category)
