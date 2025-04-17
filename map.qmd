@@ -75,13 +75,28 @@ map_data_orgtype <- map_data_orgtype %>%
   mutate(primary_org_type = factor(primary_org_type, levels = org_levels))
 
 # Step 2: Now match palette to those exact levels
+
+org_colors <- c(
+  "darkgreen",    # Religious
+  "gold",         # Social & Fraternal
+  "#FF7F00",      # Youth
+  "#E41A1C",      # Unions
+  "#984EA3",      # Healthcare
+  "#377EB8",      # Economic
+  "#4DAF4A",      # Education
+  "#A65628",      # Research & Think Tank
+  "#F781BF",      # Hobby & Sports
+  "#999999",      # Community
+  "#FFD700",      # Foundations
+  "#1E90FF",      # Professional
+  "#FB9A99",      # Arts & Cultural
+  "#B3DE69",      # Housing
+  "#FF69B4"       # Political
+)
+
 pal_primary_org <- colorFactor(
-  palette = c(
-    "darkgreen", "gold", "#FF7F00", "#E41A1C", "#984EA3", "#377EB8",
-    "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
-    "#FB9A99", "#B3DE69", "#FF69B4"
-  ),
-  domain = levels(map_data_orgtype$primary_org_type),
+  palette = org_colors,
+  domain = org_levels,
   na.color = "#CCCCCC"
 )
 
