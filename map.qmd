@@ -60,6 +60,11 @@ map_data_orgtype <- left_join(counties, aggregated_data, by = c("GEOID" = "fips"
   st_as_sf() %>%
   st_simplify(dTolerance = 0.01)
 
+map_data_orgtype <- map_data_orgtype %>%
+  mutate(
+    primary_org_type = fct_explicit_na(primary_org_type, na_level = "NA")
+  )
+
 # Define color palettes
 pal_green <- colorFactor(c("#D0F1C7", "#4CAF50", "#006400"), domain = map_data_civic$civic_opp_category)
 
@@ -68,13 +73,8 @@ org_levels <- c(
   "Religious", "Social & Fraternal", "Youth", "Unions", "Healthcare",
   "Economic", "Education", "Research & Think Tank", "Hobby & Sports", 
   "Community", "Foundations", "Professional", "Arts & Cultural", 
-  "Housing", "Political"
+  "Housing", "Political", "NA"
 )
-
-map_data_orgtype <- map_data_orgtype %>%
-  mutate(primary_org_type = factor(primary_org_type, levels = org_levels))
-
-# Step 2: Now match palette to those exact levels
 
 org_colors <- c(
   "darkgreen",    # Religious
@@ -91,13 +91,17 @@ org_colors <- c(
   "#1E90FF",      # Professional
   "#FB9A99",      # Arts & Cultural
   "#B3DE69",      # Housing
-  "#FF69B4"       # Political
+  "#FF69B4",      # Political
+  "#CCCCCC"       # Missing
 )
+
+# Re-factor to keep all levels, even if not used
+map_data_orgtype <- map_data_orgtype %>%
+  mutate(primary_org_type = factor(primary_org_type, levels = org_levels))
 
 pal_primary_org <- colorFactor(
   palette = org_colors,
-  domain = org_levels,
-  na.color = "#CCCCCC"
+  domain = org_levels
 )
 
 # Create map 1
@@ -140,13 +144,7 @@ map2 <- leaflet(map_data_orgtype, options = leafletOptions(minZoom = 3, zoomCont
     values = na.omit(map_data_orgtype$primary_org_type),
     title = "Primary Organization Type",
     position = "bottomright"
-  ) %>%
-  addLegend(
-    colors = "#CCCCCC",
-    labels = "Missing",
-    title = NULL,
-    position = "bottomright"
-  ) %>%
+  ) 
   setView(lng = -95.7129, lat = 37.0902, zoom = 4)
 ```
 
