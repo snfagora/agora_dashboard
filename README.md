@@ -1,5 +1,7 @@
-# Civic Opportunity Dashboard
+# Civic Opportunity Dashboard (work-in-progress)
 
+Developer: Jae Yeon Kim, Milan de Vries 
+Maintainer: Jae Yeon Kim, Milan de Vries
 
 ## Project Structure
 

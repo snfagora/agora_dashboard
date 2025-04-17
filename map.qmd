@@ -13,18 +13,41 @@ if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(leaflet, glue, sf, tigris, tidyverse, here, htmlwidgets, viridis, DT)
 
 # Load and prepare data
-df <- read.csv(here::here("raw_data", "cnty_counts_cov.csv"))
-df$fips <- sprintf("%05d", df$FIPS)
+civic_data <- read.csv(here::here("raw_data", "cnty_counts_cov.csv"))
+civic_data$fips <- sprintf("%05d", civic_data$FIPS)
 
 counties <- readr::read_rds(here::here("raw_data", "counties.rds"))
-states <- readr::read_rds(here::here("raw_data", "states.rds"))
 
-map_data <- left_join(counties, df, by = c("GEOID" = "fips")) %>%
-  st_as_sf() %>%
-  st_transform(crs = st_crs(states)) %>%
+# Ensure the CRS is consistent (WGS84) for counties
+counties <- st_transform(counties, crs = 4326)  # Reproject counties to WGS84 (EPSG:4326)
+
+# Load the new civic org type data
+org_type_data <- read.csv(here::here("raw_data", "cnty_civic_org_type.csv"))
+
+# Step 1: Aggregate to calculate the percentage of "Social" or "Religious" orgs within civic organizations
+aggregated_data <- org_type_data %>%
+  select(FIPS, class, freq) %>%  # Select necessary columns: FIPS, class, and freq
+  distinct() %>%  # Remove duplicate entries for each FIPS-class combination
+  mutate(is_religious_or_social = ifelse(str_detect(class, "Social|Reli"), "Religious or Fraternal", "Not")) %>%
+  group_by(FIPS) %>%  # Group by county (FIPS code)
+  summarize(
+    total_orgs = sum(freq, na.rm = TRUE),  # Sum the frequency of all organizations in each county
+    so_or_re_orgs = sum(ifelse(is_religious_or_social == "Religious or Fraternal", freq, 0), na.rm = TRUE)  # Sum frequency of Religious/Social organizations
+  ) %>%
   mutate(
-    civic_opp_category = ntile(civic_opp_sum_normalized, 5),
-    county_info = glue("<b>{NAMELSAD}</b><br/>Civic opportunity index: {round(civic_opp_index, 2)}<br/>Civic orgs per 1k: {round(civic_opp_sum_normalized, 2)}")
+    so_or_re_pct = so_or_re_orgs / total_orgs  # Calculate the percentage of Religious/Social organizations
+  )
+
+# Step 2: Join civic data with aggregated data first
+joined_data <- left_join(civic_data, aggregated_data, by = "FIPS")
+
+# Step 3: Merge the joined data with counties
+map_data <- left_join(counties, joined_data, by = c("GEOID" = "fips")) %>%
+  st_as_sf() %>%
+  st_transform(crs = 4326) %>%
+  mutate(
+    # Create categories for Civic Opportunity Index
+    civic_opp_category = ntile(civic_opp_sum_normalized, 5)
   ) %>%
   mutate(
     civic_opp_rounded_up = round(civic_opp_sum_normalized, 0),
@@ -38,15 +61,22 @@ map_data <- left_join(counties, df, by = c("GEOID" = "fips")) %>%
       civic_opp_percentile >= 0.25 ~ "Bottom 50%",
       civic_opp_percentile >= 0.10 ~ "Bottom 25%",
       civic_opp_percentile >= 0.05 ~ "Bottom 10%",
-      TRUE ~ "Bottom 5%")
+      TRUE ~ "Bottom 5%"
     )
+  )
 
-# Define color palette
-pal_green <- colorFactor(viridis(5), domain = map_data$civic_opp_category)
+# Define more extreme green color palette
+pal_green <- colorFactor(c("#D0F1C7", "#4CAF50", "#006400"), domain = map_data$civic_opp_category)  # Really light green, green, really dark green
 
-# Render map
+# Define more extreme purple color palette for Social/Religious Org Percentage
+pal_so_or_re <- colorNumeric(c("#F3E5F5", "#9B4D96", "#4B0082"), domain = map_data$so_or_re_pct)  # Really light purple, purple, really dark purple
+
+
+# Render map with both layers
 leaflet(map_data, options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
   addProviderTiles("CartoDB.Positron") %>%
+  
+  # Add Civic Opportunity layer
   addPolygons(
     fillColor = ~pal_green(civic_opp_category),
     fillOpacity = 0.7,
@@ -57,34 +87,47 @@ leaflet(map_data, options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
                    Civic Opportunity per 1k: {round(civic_opp_sum_normalized, 2)}<br/>
                    Civic Opportunity Percentile: {civic_opp_percentile_label}"),
     label = ~paste0("County: ", NAMELSAD),
-    group = "Counties"
+    group = "Civic Opportunity"
   ) %>%
+  
+  # Add Social/Religious Org Percentage layer
   addPolygons(
-    data = states,
-    color = "black",
-    weight = 2,
-    fillOpacity = 0,
-    group = "States",
-    options = pathOptions(clickable = FALSE)
+    fillColor = ~pal_so_or_re(so_or_re_pct),
+    fillOpacity = 0.7,
+    color = "#BDBDC1",
+    weight = 1,
+    popup = ~glue("<b>{NAMELSAD}</b><br/>
+                   Social/Religious Org Percentage: {round(so_or_re_pct * 100, 2)}%"),
+    label = ~paste0("County: ", NAMELSAD),
+    group = "Social/Religious Org Percentage"
   ) %>%
+  
+  # Add Legends for both layers
   addLegend(
     pal = pal_green,
     values = map_data$civic_opp_category,
     title = "Civic Opportunity Index",
-    position = "bottomright"
+    position = "bottomright",
+    group = "Civic Opportunity"
   ) %>%
-  addScaleBar(position = "bottomleft") %>%
-  addEasyButton(
-    easyButton(
-      icon = "fa-globe", title = "Reset Zoom",
-      onClick = JS("function(btn, map){ map.setView([37.0902, -95.7129], 4); }")
-    )
+  addLegend(
+    pal = pal_so_or_re,
+    values = map_data$so_or_re_pct,
+    title = "Social/Religious Org Percentage",
+    position = "bottomright",
+    group = "Social/Religious Org Percentage"
   ) %>%
+  
+  # Add Layers Control for toggling between layers
   addLayersControl(
-    overlayGroups = c("Counties", "States"),
+    overlayGroups = c("Civic Opportunity", "Social/Religious Org Percentage"),
     position = "topright"
   ) %>%
+  
+  # Set initial view
   setView(lng = -95.7129, lat = 37.0902, zoom = 4) %>%
+  
+  # Remove controls like zoom and geolocate
   removeControl("zoom") %>%
   removeControl("geolocate")
 ```
