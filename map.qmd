@@ -84,20 +84,6 @@ pal_primary_org <- colorFactor(
   domain = levels(map_data_orgtype$primary_org_type),
   na.color = "#CCCCCC"
 )
-pal_primary_org <- colorFactor(
-  palette = c(
-    "darkgreen", "gold", "#FF7F00", "#E41A1C", "#984EA3", "#377EB8",
-    "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
-    "#FB9A99", "#B3DE69", "#FF69B4"
-  ),
-  domain = c(
-    "Religious", "Social & Fraternal", "Youth", "Unions", "Healthcare",
-    "Economic", "Education", "Research & Think Tank", "Hobby & Sports", 
-    "Community", "Foundations", "Professional", "Arts & Cultural", 
-    "Housing", "Political"
-  ),
-  na.color = "#CCCCCC"  # light gray for NA
-)
 
 # Create map 1
 map1 <- leaflet(map_data_civic, options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
