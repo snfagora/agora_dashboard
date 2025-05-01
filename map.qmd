@@ -15,14 +15,6 @@ execute:
   message: false
 ---
 
-```{css}
-.enlarged-map {
-  width: 100vw;
-  height: 85vh;
-  margin-left: -8vw;
-}
-```
-
 ```{r setup, include=FALSE}
 # Load necessary packages
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
@@ -286,9 +278,6 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 
 ```
 
-```{r, echo = FALSE}
-htmltools::tags$div(
-  class = "enlarged-map",
-  combined_map
-)
+```{r, echo = FALSE, fig.width = 14, fig.height = 8}
+combined_map
 ```
