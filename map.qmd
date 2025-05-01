@@ -169,10 +169,10 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
         <p><strong>Total Civic Opportunity Orgs:</strong> {civic_org_sum} of {n} nonprofits</p>
     
         <p><u><strong>Civic Opportunity Types (counts):</strong></u><br/>
-       Volunteer: {volunteer_sum}<br/>
-       Membership: {membership_sum}<br/>
-       Take Action: {take_action_sum}<br/>
-       Events: {events_sum}</p>
+       Volunteer Org #: {volunteer_sum}<br/>
+       Membership Org #: {membership_sum}<br/>
+       Take Action Org #: {take_action_sum}<br/>
+       Events Org #: {events_sum}</p>
     
         <p><u><strong>Sociodemographic Indicators (%):</strong></u><br/>
        Poverty: {round(POV150, 1)}%<br/>
@@ -279,5 +279,8 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 ```
 
 ```{r, echo = FALSE, fig.width = 20, fig.height = 16}
-combined_map
+htmltools::tags$div(
+  style = "width: 100%; height: 800px;",
+  combined_map
+)
 ```
