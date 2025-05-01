@@ -2,13 +2,11 @@
 title: "Civic Opportunity Map"
 format: 
   html:
-    # Leaflet-specific options
-    leaflet:
-      center: [37.0902, -95.7129]  # Latitude and Longitude for the US center
-      zoom: 4                     # Initial zoom level
-      options:
-        minZoom: 3                # Minimum zoom level
-        zoomControl: true         # Enable zoom controls
+    page-layout: custom
+    self-contained: true
+    css: styles.css
+    theme: minimal
+    toc: true
 execute:
   echo: false
   warning: false
@@ -23,32 +21,42 @@ pacman::p_load(
   RColorBrewer, htmltools
 )
 
-# Set a consistent theme for plots (if needed)
+# Set a consistent theme for plots
 theme_set(theme_minimal())
+
+# Validate required files exist
+required_files <- c(
+  "cnty_counts_cov.csv",
+  "counties.rds",
+  "cnty_civic_org_type.csv"
+)
+
+for (file in required_files) {
+  if (!file.exists(here::here("raw_data", file))) {
+    stop(sprintf("Required file %s not found in raw_data directory", file))
+  }
+}
 ```
 
-```{r}
-# Load and prepare civic opportunity data
+```{r data-loading}
+# Load and prepare civic opportunity data with enhanced error handling
 civic_data <- tryCatch({
   read.csv(here::here("raw_data", "cnty_counts_cov.csv")) %>%
-    mutate(fips = sprintf("%05d", FIPS))  # Ensure FIPS codes are 5 digits
+    mutate(
+      fips = sprintf("%05d", FIPS),  # Ensure FIPS codes are 5 digits
+      .after = FIPS
+    )
 }, error = function(e) {
   stop("Error loading civic opportunity data: ", e$message)
 })
 
-# Load spatial data for counties and states
+# Load spatial data for counties
 counties <- tryCatch({
   readr::read_rds(here::here("raw_data", "counties.rds")) %>%
-    st_transform(4326)
+    st_transform(4326) %>%
+    filter(st_is_valid(.))  # Ensure geometries are valid
 }, error = function(e) {
   stop("Error loading counties data: ", e$message)
-})
-
-states <- tryCatch({
-  readr::read_rds(here::here("raw_data", "states.rds")) %>%
-    st_transform(4326)
-}, error = function(e) {
-  stop("Error loading states data: ", e$message)
 })
 
 # Load and aggregate organization type data
@@ -57,43 +65,42 @@ org_type_data <- tryCatch({
 }, error = function(e) {
   stop("Error loading organization type data: ", e$message)
 })
+```
 
-# Aggregate primary organization type
-top3_orgs <- org_type_data %>%
+```{r data-processing}
+# Process organization type data with validation
+aggregated_data <- org_type_data %>%
   filter(!is.na(class)) %>%
   group_by(FIPS, class) %>%
-  summarise(freq = sum(freq, na.rm = TRUE), .groups = "drop") %>%
+  summarise(
+    freq = sum(freq, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
   group_by(FIPS) %>%
   mutate(
-    total_freq = sum(freq),
-    pct = freq / total_freq
+    rank = row_number(),
+    freq = replace_na(freq, 0)
   ) %>%
-  arrange(FIPS, desc(freq)) %>%
-  slice_head(n = 3) %>%
-  mutate(rank = row_number()) %>%
-  ungroup()
-
-aggregated_data <- top3_orgs %>%
-  mutate(
-    rank_label = case_when(
-      rank == 1 ~ "primary",
-      rank == 2 ~ "second",
-      rank == 3 ~ "third"
-    )
-  ) %>%
-  select(FIPS, rank_label, class, pct) %>%
   pivot_wider(
-    names_from = rank_label,
-    values_from = c(class, pct),
-    names_glue = "{rank_label}_org_{.value}"
+    names_from = rank,
+    values_from = class,
+    names_prefix = "org_type_"
+  ) %>%
+  mutate(
+    fips = sprintf("%05d", FIPS),
+    across(starts_with("org_type_"), ~coalesce(., "No Data"))
   )
 
-# Join civic data with counties
+# Join civic data with counties and add metrics
 map_data_civic <- counties %>%
   left_join(civic_data, by = c("GEOID" = "fips")) %>%
   st_as_sf() %>%
   mutate(
-    civic_opp_category = ntile(civic_opp_sum_normalized, 5),
+    civic_opp_category = if_else(
+      is.na(civic_opp_sum_normalized),
+      NA_integer_,
+      ntile(civic_opp_sum_normalized, 5)
+    ),
     civic_opp_index = civic_opp_category,
     civic_opp_percentile = percent_rank(civic_opp_sum_normalized),
     civic_opp_percentile_label = case_when(
@@ -102,85 +109,37 @@ map_data_civic <- counties %>%
       civic_opp_percentile >= 0.90 ~ "Top 10%",
       civic_opp_percentile >= 0.75 ~ "Top 25%",
       civic_opp_percentile >= 0.50 ~ "Top 50%",
-      civic_opp_percentile >= 0.25 ~ "Bottom 50%",
-      civic_opp_percentile >= 0.10 ~ "Bottom 25%",
-      civic_opp_percentile >= 0.05 ~ "Bottom 10%",
-      TRUE ~ "Bottom 5%"
-    )
-  ) %>%
-  st_simplify(dTolerance = 0.01)
-
-# Join organization type data with counties
-aggregated_data <- aggregated_data %>%
-  mutate(fips = sprintf("%05d", FIPS))
-
-map_data_orgtype <- counties %>%
-  left_join(aggregated_data, by = c("GEOID" = "fips")) %>%
-  st_as_sf() %>%
-  st_simplify(dTolerance = 0.01) %>%
-  mutate(
-    primary_org_class = factor(
-      primary_org_class, 
-      levels = c(
-        "Religious", "Social & Fraternal", "Youth", "Unions", "Healthcare",
-        "Economic", "Education", "Research & Think Tank", "Hobby & Sports", 
-        "Community", "Foundations", "Professional", "Arts & Cultural", 
-        "Housing", "Political", "NA"
-      )
+      TRUE ~ "Below 50%"
     )
   )
 
-# Define color palettes
-pal_green <- colorFactor(c("#D0F1C7", "#4CAF50", "#006400"), domain = map_data_civic$civic_opp_category)
+# Join organization type data with counties
+map_data_orgtype <- counties %>%
+  left_join(aggregated_data, by = c("GEOID" = "fips")) %>%
+  st_as_sf()
+```
+
+```{r color-palettes}
+# Define enhanced color palettes
+pal_green <- colorFactor(
+  c("#D0F1C7", "#4CAF50", "#006400"),
+  domain = map_data_civic$civic_opp_category,
+  na.color = "#CCCCCC"
+)
+
 pal_primary_org <- colorFactor(
   palette = c(
     "darkgreen", "gold", "#FF7F00", "#E41A1C", "#984EA3", "#377EB8",
     "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
     "#FB9A99", "#B3DE69", "#FF69B4", "#CCCCCC"
   ),
-  domain = levels(map_data_orgtype$primary_org_class),
+  domain = unique(aggregated_data$org_type_1),
   na.color = "lightgrey"
 )
-
-# Create Civic Opportunity Map
-map1 <- leaflet(map_data_civic) %>%
-  addProviderTiles("CartoDB.Positron") %>%
-  addPolygons(
-    fillColor = ~pal_green(civic_opp_category),
-    fillOpacity = 0.7,
-    color = "#BDBDC1",
-    weight = 1,
-    popup = ~glue(
-      "<b>{NAMELSAD}</b><br/>
-      Civic Opportunity Index: {civic_opp_index}<br/>
-      Civic Opportunity Percentile: {civic_opp_percentile_label}"
-    ),
-    label = ~NAMELSAD
-  ) %>%
-  addLegend(pal = pal_green, values = ~civic_opp_category, title = "Civic Opportunity Index") %>%
-  fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49)  # Continental US bounding box
-
-
-# Create Organization Type Map
-map2 <- leaflet(map_data_orgtype) %>%
-  addProviderTiles("CartoDB.Positron") %>%
-  addPolygons(
-    fillColor = ~pal_primary_org(primary_org_class),
-    fillOpacity = 0.7,
-    color = "#BDBDC1",
-    weight = 1,
-    popup = ~glue(
-      "<b>{NAMELSAD}</b><br/>
-      Primary Organization Type: {primary_org_class}"
-    ),
-    label = ~NAMELSAD
-  ) %>%
-  addLegend(pal = pal_primary_org, values = ~primary_org_class, title = "Primary Organization Type") %>%
-  fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49)  # Continental US bounding box
 ```
 
-```{r, echo=FALSE}
-# Create a combined Leaflet map with layer control
+```{r create-map}
+# Create combined map with improved interaction
 combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
   addProviderTiles("CartoDB.Positron", group = "Base Map") %>%
   
@@ -191,39 +150,145 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     fillOpacity = 0.7,
     color = "#BDBDC1",
     weight = 1,
-    popup = ~glue(
-      "<b>{NAMELSAD}</b><br/>
-      Civic Opportunity Index: {civic_opp_index}<br/>
-      Civic Opportunity Percentile: {civic_opp_percentile_label}"
-    ),
+    popup = FALSE,
     label = ~NAMELSAD,
-    group = "Civic Opportunity Counts"
+    layerId = ~GEOID,
+    group = "Civic Opportunity Counts",
+    highlightOptions = highlightOptions(
+      weight = 2,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    )
   ) %>%
   
-  # Add Primary Civic Opportunity Organization Type map layer
+  # Add Primary Organization Type map layer
   addPolygons(
     data = map_data_orgtype,
-    fillColor = ~pal_primary_org(primary_org_class),
+    fillColor = ~pal_primary_org(org_type_1),
     fillOpacity = 0.7,
     color = "#BDBDC1",
     weight = 1,
-    popup = ~glue(
-      "<b>{NAMELSAD}</b><br/>
-      Primary Organization Type: {primary_org_class}"
-    ),
+    popup = FALSE,
     label = ~NAMELSAD,
-    group = "Primary Civic Opportunity Organization Type"
+    layerId = ~GEOID,
+    group = "Primary Organization Type",
+    highlightOptions = highlightOptions(
+      weight = 2,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    )
   ) %>%
   
-  # Add layer control for toggling between maps
+  # Add layer controls
   addLayersControl(
-    baseGroups = c("Civic Opportunity Counts", "Primary Civic Opportunity Organization Type"),
+    baseGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>%
   
-  # Set initial view to the continental US
+  # Set initial view
   fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49)
 
-# Render the combined map
-combined_map
+# Save the combined map
+saveWidget(combined_map, "combined_map.html", selfcontained = TRUE)
 ```
+
+::: {.column-screen}
+<div class="main-container">
+  <!-- Main container for the entire layout -->
+  <div class="map-layout">
+    <!-- Flex container for the sidebar and map -->
+    <div class="sidebar">
+      <!-- Sidebar containing county details -->
+      <div class="details-container">
+        <!-- Container for the details content -->
+        <h3>County Details</h3>
+        <div id="county-details">
+          <!-- Placeholder for county details -->
+          <p>Select a county on the map to see details here.</p>
+        </div>
+      </div>
+    </div>
+    <div class="map-container">
+      <!-- Container for the map -->
+      <iframe id="map-frame" src="combined_map.html"></iframe>
+      <!-- Iframe embedding the Leaflet map -->
+    </div>
+  </div>
+</div>
+
+<script>
+// JavaScript to handle map interactions and update county details
+document.addEventListener("DOMContentLoaded", function() {
+  // Runs when the document is fully loaded
+  const mapFrame = document.getElementById("map-frame");
+  // Get the iframe element containing the map
+  const detailsPanel = document.getElementById("county-details");
+  // Get the div element for displaying county details
+
+  mapFrame.addEventListener("load", function() {
+    // Runs when the map iframe is loaded
+    try {
+      const mapWindow = mapFrame.contentWindow;
+      // Get the window object of the iframe
+      const map = mapWindow.document.querySelector(".leaflet").leaflet;
+      // Get the Leaflet map instance from the iframe
+
+      map.on('baselayerchange', function(e) {
+        // Log base layer changes
+        console.log('Switched to:', e.name);
+      });
+
+      map.eachLayer(function(layer) {
+        // Iterate over each layer in the map
+        if (layer.feature) {
+          // Check if the layer has feature properties (i.e., is a county)
+          layer.on("click", function(e) {
+            // Add a click listener to each county layer
+            const props = e.target.feature.properties;
+            // Get the properties of the clicked county
+
+            const details = {
+              // Extract and format county details
+              name: props.NAMELSAD || "Unknown County",
+              index: props.civic_opp_index || "N/A",
+              percentile: props.civic_opp_percentile_label || "N/A",
+              primary: props.org_type_1 || "N/A",
+              secondary: props.org_type_2 || "N/A",
+              tertiary: props.org_type_3 || "N/A"
+            };
+
+            detailsPanel.innerHTML = `
+              <!-- Update the details panel with county information -->
+              <h3>${details.name}</h3>
+              <hr>
+              <h4>Civic Opportunity Metrics</h4>
+              <p><b>Index:</b> ${details.index}</p>
+              <p><b>Percentile:</b> ${details.percentile}</p>
+              <hr>
+              <h4>Organization Types</h4>
+              <p><b>Primary:</b> ${details.primary}</p>
+              <p><b>Secondary:</b> ${details.secondary}</p>
+              <p><b>Tertiary:</b> ${details.tertiary}</p>
+            `;
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Error setting up map interactions:", error);
+      // Display an error message in case of issues
+      detailsPanel.innerHTML = `
+        <div class="error-message">
+          <h3>Error Loading Map</h3>
+          <p>There was an error setting up the map interactions. Please refresh the page.</p>
+          <p>Error details: ${error.message}</p>
+        </div>
+      `;
+    }
+  });
+});
+</script>
+:::
