@@ -263,7 +263,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
       });
     }
   ") %>%
-   htmlwidgets::onRender("
+  htmlwidgets::onRender("
     function(el, x) {
       var map = this;
       function updateSidebar(content) {
@@ -271,9 +271,11 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
         if (sidebar) sidebar.innerHTML = content;
       }
       map.eachLayer(function(layer) {
-        if (layer.feature && layer._popup) {
+        if (layer.getPopup && layer.getPopup()) {
+          var popupContent = layer.getPopup().getContent();
+          layer.unbindPopup(); // disable in-map popup
           layer.on('click', function() {
-            updateSidebar(layer._popup.getContent());
+            updateSidebar(popupContent);
           });
         }
       });
@@ -293,16 +295,44 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 ```{r, echo = FALSE, fig.width = 20, fig.height = 20}
 htmltools::browsable(
   htmltools::tagList(
+    tags$style(HTML("
+      #map-container, #popup-sidebar {
+        height: 50vh;
+        width: 100%;
+      }
+
+      #popup-sidebar {
+        overflow-y: auto;
+        padding: 1em;
+        font-size: 14px;
+        border-top: 1px solid #ccc;
+        background-color: #f9f9f9;
+      }
+
+      @media (min-width: 768px) {
+        .layout {
+          display: flex;
+          flex-direction: row;
+          height: 90vh;
+        }
+
+        #map-container {
+          width: 70%;
+          height: 100%;
+        }
+
+        #popup-sidebar {
+          width: 30%;
+          height: 100%;
+          border-top: none;
+          border-left: 1px solid #ccc;
+        }
+      }
+    ")),
     tags$div(
-      style = "display: flex; flex-direction: row; width: 100%;",
-      tags$div(
-        id = "popup-sidebar",
-        style = "width: 30%; padding: 1em; overflow-y: auto; font-size: 14px; border-right: 1px solid #ccc;"
-      ),
-      tags$div(
-        style = "width: 70%; height: 90vh;",
-        combined_map
-      )
+      class = "layout",
+      tags$div(id = "map-container", combined_map),
+      tags$div(id = "popup-sidebar", "Click a county to see details.")
     )
   )
 )
