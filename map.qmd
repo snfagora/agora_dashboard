@@ -278,6 +278,6 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 
 ```
 
-```{r, echo = FALSE, fig.width = 14, fig.height = 8}
+```{r, echo = FALSE, fig.width = 16, fig.height = 12}
 combined_map
 ```
