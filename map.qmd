@@ -2,13 +2,15 @@
 title: "Civic Opportunity Map"
 format: 
   html:
-    # Leaflet-specific options
+    page-layout: full
+    theme: default
+    self-contained: false
     leaflet:
-      center: [37.0902, -95.7129]  # Latitude and Longitude for the US center
-      zoom: 4                     # Initial zoom level
+      center: [37.0902, -95.7129]
+      zoom: 4
       options:
-        minZoom: 3                # Minimum zoom level
-        zoomControl: true         # Enable zoom controls
+        minZoom: 3
+        zoomControl: true
 execute:
   echo: false
   warning: false
