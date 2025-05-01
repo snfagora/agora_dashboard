@@ -152,7 +152,7 @@ map_data_orgtype <- map_data_orgtype %>%
 
 # Create the combined map
 combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
-  addProviderTiles("Esri.WorldGrayCanvas", group = "Base Map") %>%
+  addProviderTiles("CartoDB.Positron", group = "Base Map") %>%
 
   # Add Civic Opportunity Counts layer
   addPolygons(
