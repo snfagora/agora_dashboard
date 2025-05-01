@@ -15,11 +15,19 @@ execute:
   message: false
 ---
 
+```{css}
+.enlarged-map {
+  width: 100vw;
+  height: 85vh;
+  margin-left: -8vw;
+}
+```
+
 ```{r setup, include=FALSE}
 # Load necessary packages
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(
-  leaflet, glue, sf, tigris, tidyverse, here, htmlwidgets, viridis, 
+  leaflet, leaflet.extras, glue, sf, tigris, tidyverse, here, htmlwidgets, viridis, 
   RColorBrewer, htmltools
 )
 
@@ -108,7 +116,7 @@ map_data_civic <- counties %>%
       TRUE ~ "Bottom 5%"
     )
   ) %>%
-  st_simplify(dTolerance = 0.05)
+  st_simplify(dTolerance = 0.1)
 
 # Join organization type data with counties
 aggregated_data <- aggregated_data %>%
@@ -117,7 +125,7 @@ aggregated_data <- aggregated_data %>%
 map_data_orgtype <- counties %>%
   left_join(aggregated_data, by = c("GEOID" = "fips")) %>%
   st_as_sf() %>%
-  st_simplify(dTolerance = 0.05) %>%
+  st_simplify(dTolerance = 0.1) %>%
   mutate(
     primary_org_class = factor(
       primary_org_class, 
@@ -142,10 +150,18 @@ pal_primary_org <- colorFactor(
   na.color = "lightgrey"
 )
 
+map_data_orgtype <- map_data_orgtype %>%
+  left_join(
+    map_data_civic %>% 
+      st_drop_geometry() %>%
+      select(GEOID, POV150, SNGPNT, NOHSDP, BROAD, UNEMP, REMNRTY),
+    by = "GEOID"
+  )
+
 # Create the combined map
 combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
-  addProviderTiles("CartoDB.Positron", group = "Base Map") %>%
-  
+  addProviderTiles("Esri.WorldGrayCanvas", group = "Base Map") %>%
+
   # Add Civic Opportunity Counts layer
   addPolygons(
     data = map_data_civic,
@@ -154,13 +170,38 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     color = "#BDBDC1",
     weight = 1,
     popup = ~glue(
-      "<b>{NAMELSAD}</b><br/>
-      Civic Opportunity Index: {civic_opp_index}<br/>
-      Civic Opportunity Percentile: {civic_opp_percentile_label}"
+      "<div style='font-size: 13px; line-height: 1.4; max-width: 300px;'>
+        <h4 style='margin-bottom: 6px;'>{NAMELSAD}</h4>
+    
+        <p><strong>Civic Opportunity Index:</strong> {civic_opp_index} ({civic_opp_percentile_label})</p>
+        <p><strong>Total Civic Opportunity Orgs:</strong> {civic_org_sum} of {n} nonprofits</p>
+    
+        <p><u><strong>Civic Opportunity Types (counts):</strong></u><br/>
+       Volunteer: {volunteer_sum}<br/>
+       Membership: {membership_sum}<br/>
+       Take Action: {take_action_sum}<br/>
+       Events: {events_sum}</p>
+    
+        <p><u><strong>Sociodemographic Indicators (%):</strong></u><br/>
+       Poverty: {round(POV150, 1)}%<br/>
+       Single Parents: {round(SNGPNT, 1)}%<br/>
+       No HS Diploma: {round(NOHSDP, 1)}%<br/>
+       Without Broadband: {round(BROAD, 1)}%<br/>
+       Unemployed: {round(UNEMP, 1)}%<br/>
+       Non-White Share: {round(REMNRTY, 1)}%</p>
+        </p>
+      </div>"
     ),
     label = ~NAMELSAD,
+    highlightOptions = highlightOptions(
+      weight = 3,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    ),
     group = "Civic Opportunity Counts"
-  ) %>%
+    ) %>%
   
   # Add Primary Organization Type layer
   addPolygons(
@@ -170,12 +211,34 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     color = "#BDBDC1",
     weight = 1,
     popup = ~glue(
-      "<b>{NAMELSAD}</b><br/>
-      Primary Organization Type: {primary_org_class}"
+      "<div style='font-size: 13px; line-height: 1.4; max-width: 300px;'>
+        <h4 style='margin-bottom: 6px;'>{NAMELSAD}</h4>
+    
+        <p><u><strong>Top Civic Organization Types:</strong></u><br/>
+           1. {primary_org_class} ({round(primary_org_pct * 100, 1)}%)<br/>
+           2. {second_org_class} ({round(second_org_pct * 100, 1)}%)<br/>
+           3. {third_org_class} ({round(third_org_pct * 100, 1)}%)</p>
+    
+        <p><u><strong>Sociodemographic Indicators:</strong></u><br/>
+       Poverty: {round(POV150, 1)}%<br/>
+       Single Parents: {round(SNGPNT, 1)}%<br/>
+       No HS Diploma: {round(NOHSDP, 1)}%<br/>
+       Without Broadband: {round(BROAD, 1)}%<br/>
+       Unemployed: {round(UNEMP, 1)}%<br/>
+       Non-White Share: {round(REMNRTY, 1)}%</p>
+        </p>
+      </div>"
     ),
     label = ~NAMELSAD,
+    highlightOptions = highlightOptions(
+      weight = 3,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    ), 
     group = "Primary Organization Type"
-  ) %>%
+    ) %>%
   
  # Modified legend additions with group attributes
   addLegend(
@@ -187,7 +250,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     className = "info legend civic-legend"  # Added class for identification
   ) %>%
   addLegend(
-    position = "bottomleft",
+    position = "bottomright",
     pal = pal_primary_org,
     values = map_data_orgtype$primary_org_class,
     title = "Primary Organization Type",
@@ -195,23 +258,19 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     className = "info legend org-legend"    # Added class for identification
   ) %>%
   
-  
   # Add layer controls
   addLayersControl(
     baseGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>%
   
-  # Add JavaScript to toggle legends dynamically
   htmlwidgets::onRender("
     function(el, x) {
       var map = this;
-      
-      // Function to update legend visibility
+      var civicLegend = document.querySelector('.civic-legend');
+      var orgLegend = document.querySelector('.org-legend');
+  
       function updateLegends(activeLayer) {
-        var civicLegend = document.querySelector('.civic-legend');
-        var orgLegend = document.querySelector('.org-legend');
-        
         if (activeLayer === 'Civic Opportunity Counts') {
           if (civicLegend) civicLegend.style.display = 'block';
           if (orgLegend) orgLegend.style.display = 'none';
@@ -220,13 +279,11 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
           if (orgLegend) orgLegend.style.display = 'block';
         }
       }
-      
-      // Set initial legend state
+  
       setTimeout(function() {
         updateLegends('Civic Opportunity Counts');
       }, 100);
-      
-      // Update legends when layer changes
+  
       map.on('baselayerchange', function(e) {
         updateLegends(e.name);
       });
@@ -234,10 +291,18 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
   ") %>%
   
   # Set the initial map view
-  fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49) 
+  fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49) %>%
+  
+  addSearchFeatures(
+  targetGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
+  options = searchFeaturesOptions(zoom = 7, openPopup = TRUE)
+  )
+
 ```
 
-```{r, echo=FALSE}
-# Render the map
-combined_map
+```{r, echo = FALSE}
+htmltools::tags$div(
+  class = "enlarged-map",
+  combined_map
+)
 ```
