@@ -141,8 +141,9 @@ map_data_orgtype <- counties %>%
 
 # Define color palettes
 pal_green <- colorFactor(
-  palette = RColorBrewer::brewer.pal(5, "Greens"), 
-  domain = map_data_civic$civic_opp_category
+  palette = RColorBrewer::brewer.pal(5, "Greens"),
+  domain = map_data_civic$civic_opp_category,
+  na.color = "lightgrey"
 )
 
 pal_primary_org <- colorFactor(
@@ -188,6 +189,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
       "<div style='font-size: 13px; line-height: 1.4; max-width: 300px;'>
         <h4 style='margin-bottom: 6px;'>{NAMELSAD}, {STUSPS}</h4>
     
+        <p><strong>Civic Opportunity Index:</strong> {civic_opp_index} ({civic_opp_percentile_label})</p>
         <p><strong>Total Civic Opportunity Orgs:</strong> {civic_org_sum} of {n} nonprofits</p>
         <p><strong>State Rank:</strong> {scales::comma(state_rank)} / {scales::comma(state_total)}</p>
         <p><strong>National Rank:</strong> {scales::comma(national_rank)} / {scales::comma(national_total)}</p>
@@ -284,6 +286,11 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
   
       // Wait for map to initialize
       map.whenReady(function() {
+        map.eachLayer(function(layer) {
+          if (layer.options && layer.options.group === 'Civic Opportunity Counts') {
+            map.addLayer(layer);
+          }
+        });
         updateLegends('Civic Opportunity Counts');
       });
   
