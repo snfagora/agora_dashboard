@@ -1,5 +1,12 @@
 [
   {
+    "objectID": "table.html",
+    "href": "table.html",
+    "title": "Civic Opportunity Table",
+    "section": "",
+    "text": "table.dataTable td {\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  overflow: hidden;\n}"
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Welcome to the MapAgora Dashboard 🗺️",
