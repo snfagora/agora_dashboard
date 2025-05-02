@@ -417,22 +417,23 @@ generate_orgtype_bars <- function(df) {
 
 # Step 5: Nest + fallback
 popup_data <- org_type_pct %>%
-  group_by(county) %>%
+  group_by(county, STUSPS) %>%
   group_split() %>%
   map_dfr(~ tibble(
     county = .x$county[1],
+    STUSPS = .x$STUSPS[1],
     orgtype_bar_html = generate_orgtype_bars(.x)
   )) %>%
-  complete(county = map_data_orgtype$NAMELSAD) %>%
+  complete(county = map_data_orgtype$NAMELSAD, STUSPS = map_data_orgtype$STUSPS) %>%
   mutate(orgtype_bar_html = ifelse(
     is.na(orgtype_bar_html),
     "<p><strong>No civic organization type data available for this county.</strong></p>",
     orgtype_bar_html
   ))
 
-# Step 6: Join into map_data_orgtype
+# Step 6: Join into map_data_orgtype using both county and STUSPS
 map_data_orgtype <- map_data_orgtype %>%
-  left_join(popup_data, by = c("NAMELSAD" = "county"))
+  left_join(popup_data, by = c("NAMELSAD" = "county", "STUSPS"))
 
 composition_bars <- function(df) {
   # Get max value among the 4 components for scaling
