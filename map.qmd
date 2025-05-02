@@ -372,7 +372,7 @@ org_color_lookup <- setNames(pal_colors, org_levels)
 generate_orgtype_bars <- function(df) {
   paste0(
     "<div style='font-family:sans-serif; font-size:13px; max-width:300px;'>",
-    "<strong>Civic Organization Breakdown</strong><br/><small>Colored bar = county share, red line = national share</small><br/>",
+    "<strong>Civic Opportunity Organization Breakdown</strong><br/><small>Colored bar = county share, red line = national share</small><br/>",
     paste(
       purrr::map_chr(1:nrow(df), function(i) {
         cls <- df$class[i]
