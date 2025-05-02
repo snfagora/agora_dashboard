@@ -188,8 +188,12 @@ generate_civic_index_html <- function(df) {
 <div style='font-family:sans-serif; font-size:13px; max-width:300px;'>
   <h4 style='margin-bottom:6px;'>{row$NAMELSAD}, {row$STUSPS}</h4>
 
-  <strong>Civic Opportunity Index (1–5 scale)</strong><br/>
-{index_boxes}
+  <strong>Civic Opportunity Index (1–5 scale)</strong>
+  <button onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';\" style='background:none; border:none; cursor:pointer; font-size:14px;'>❓</button>
+  <div style='display:none; font-size:12px; margin-top:4px;'>
+    This index ranks all counties from 1 (low) to 5 (high) based on civic opportunity scores—derived from counts of volunteering, membership, events, and take-action opportunities.
+  </div><br/>
+  {index_boxes}
   
   <strong>Raw Counts</strong><br/>
   <ul style='padding-left: 20px; margin-top: 4px;'>
@@ -198,31 +202,36 @@ generate_civic_index_html <- function(df) {
     <li>National Rank: <strong>{scales::comma(row$national_rank)}</strong> / <strong>{scales::comma(row$national_total)}</strong></li>
   </ul><br/>
 
-  <strong>Civic Opportunity Composition (counts)</strong><br/>
-  <div style='margin-bottom:4px;'>Volunteer
+  <strong>Civic Opportunity Composition (organization counts)</strong>
+  <button onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';\" style='background:none; border:none; cursor:pointer; font-size:14px;'>❓</button>
+  <div style='display:none; font-size:12px; margin-top:4px;'>
+    These bars show the number of organizations in each civic category. Bar lengths are relative to this county’s total civic orgs.
+  </div><br/>
+  
+  <div style='margin-bottom:4px;'>Volunteer organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#1f77b4; width:{row$volunteer_sum}px; max-width:100%; height:10px;'></div>
+      <div style='background:#1f77b4; width:{row$volunteer_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$volunteer_sum}</div>
     </div>
   </div>
-  <div style='margin-bottom:4px;'>Membership
+  <div style='margin-bottom:4px;'>Membership-based organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#ff7f0e; width:{row$membership_sum}px; max-width:100%; height:10px;'></div>
+      <div style='background:#ff7f0e; width:{row$membership_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$membership_sum}</div>
     </div>
   </div>
-  <div style='margin-bottom:4px;'>Take Action
+  <div style='margin-bottom:4px;'>Take Action organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#2ca02c; width:{row$take_action_sum}px; max-width:100%; height:10px;'></div>
+      <div style='background:#2ca02c; width:{row$take_action_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$take_action_sum}</div>
     </div>
   </div>
-  <div style='margin-bottom:4px;'>Public Events
+  <div style='margin-bottom:8px;'>Event-hosting organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#d62728; width:{row$events_sum}px; max-width:100%; height:10px;'></div>
+      <div style='background:#d62728; width:{row$events_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$events_sum}</div>
     </div>
-  </div><br/>
+  </div>
 
   <strong>Sociodemographic Indicators (%)</strong><br/>
   {demographic_bar('Poverty', row$POV150)}
@@ -409,36 +418,41 @@ map_data_orgtype <- map_data_orgtype %>%
   left_join(popup_data, by = c("NAMELSAD" = "county"))
 
 composition_bars <- function(df) {
-  v_pct <- round(df$volunteer_sum / df$civic_org_sum * 100, 1)
-  m_pct <- round(df$membership_sum / df$civic_org_sum * 100, 1)
-  t_pct <- round(df$take_action_sum / df$civic_org_sum * 100, 1)
-  e_pct <- round(df$events_sum / df$civic_org_sum * 100, 1)
+  # Get max value among the 4 components for scaling
+  max_val <- max(c(df$volunteer_sum, df$membership_sum, df$take_action_sum, df$events_sum), na.rm = TRUE)
 
+  # Compute relative widths (0–100%)
+  v_width <- round(df$volunteer_sum / max_val * 100, 1)
+  m_width <- round(df$membership_sum / max_val * 100, 1)
+  t_width <- round(df$take_action_sum / max_val * 100, 1)
+  e_width <- round(df$events_sum / max_val * 100, 1)
+
+  # Render HTML
   glue::glue("
   <div style='margin-top:6px;'>
-    <strong>Civic Opportunity Composition</strong><br/>
+    <strong>Civic Opportunity Composition (counts)</strong><br/>
     <div style='margin-bottom:4px;'>Volunteer
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#1f77b4; width:{v_pct}%; height:10px;'></div>
-        <div style='position:absolute; right:0; top:0; font-size:11px;'>{v_pct}%</div>
+        <div style='background:#1f77b4; width:{v_width}%; height:10px;'></div>
+        <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$volunteer_sum}</div>
       </div>
     </div>
     <div style='margin-bottom:4px;'>Membership
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#ff7f0e; width:{m_pct}%; height:10px;'></div>
-        <div style='position:absolute; right:0; top:0; font-size:11px;'>{m_pct}%</div>
+        <div style='background:#ff7f0e; width:{m_width}%; height:10px;'></div>
+        <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$membership_sum}</div>
       </div>
     </div>
     <div style='margin-bottom:4px;'>Take Action
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#2ca02c; width:{t_pct}%; height:10px;'></div>
-        <div style='position:absolute; right:0; top:0; font-size:11px;'>{t_pct}%</div>
+        <div style='background:#2ca02c; width:{t_width}%; height:10px;'></div>
+        <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$take_action_sum}</div>
       </div>
     </div>
     <div style='margin-bottom:4px;'>Public Events
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#d62728; width:{e_pct}%; height:10px;'></div>
-        <div style='position:absolute; right:0; top:0; font-size:11px;'>{e_pct}%</div>
+        <div style='background:#d62728; width:{e_width}%; height:10px;'></div>
+        <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$events_sum}</div>
       </div>
     </div>
   </div>
@@ -595,42 +609,30 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 ```{r, echo = FALSE, fig.width = 20, fig.height = 20}
 htmltools::browsable(
   htmltools::tagList(
-    tags$style(HTML("#map-container, #popup-sidebar {
-  height: 50vh;
-  width: 100%;
+    tags$style(HTML("
+.layout {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+}
+
+#map-container {
+  width: 70%;
+  height: 100%;
 }
 
 #popup-sidebar {
+  width: 30%;
+  height: 100%;
   overflow-y: auto;
+  border-left: 1px solid #ccc;
+  background-color: #f9f9f9;
   padding: 1em;
   font-size: 14px;
-  border-top: 1px solid #ccc;
-  background-color: #f9f9f9;
-}
-
-@media (min-width: 768px) {
-  .layout {
-    display: flex;
-    flex-direction: row;
-    height: 90vh;
-  }
-
-  #map-container {
-    width: 70%;
-    height: 100%;
-  }
-
-  #popup-sidebar {
-    width: 30%;
-    height: 100%;
-    border-top: none;
-    border-left: 1px solid #ccc;
-  }
 }
 
 @media (max-width: 767px) {
   .layout {
-    display: flex;
     flex-direction: column;
     height: auto;
   }
@@ -646,7 +648,8 @@ htmltools::browsable(
     border-left: none;
     border-top: 1px solid #ccc;
   }
-}")),
+}
+")),
     tags$div(
       class = "layout",
       tags$div(id = "map-container", combined_map),
