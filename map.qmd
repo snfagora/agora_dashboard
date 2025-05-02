@@ -659,7 +659,7 @@ htmltools::browsable(
 .layout {
   display: flex;
   flex-direction: row;
-  height: 100vh;
+  height: 1200px;
 }
 
 #map-container {
@@ -677,10 +677,10 @@ htmltools::browsable(
   font-size: 14px;
 }
 
-@media (max-width: 767px) {
+@media (min-height: 1000px) {
   .layout {
     flex-direction: column;
-    height: auto;
+    height: 90vh;
   }
 
   #map-container {
