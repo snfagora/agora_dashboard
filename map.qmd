@@ -497,7 +497,7 @@ map_data_civic <- map_data_civic %>%
 #     label = ~paste(NAMELSAD, "Category:", civic_opp_category)
 #   ) %>%
 #   addLegend(
-#     position = "bottomleft",
+#     position = "bottomright",
 #     pal = pal_green,
 #     values = map_data_civic$civic_opp_category,
 #     title = "Test: Civic Opp Category (0–5)"
@@ -554,7 +554,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 
   # Civic Opportunity Legend
   addLegend(
-    position = "bottomleft",
+    position = "bottomright",
     pal = pal_green,
     values = map_data_civic$civic_opp_category,
     title = "Civic Opportunity Index",
@@ -576,7 +576,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
 
   # Org Type Legend
   addLegend(
-    position = "bottomleft",
+    position = "bottomright",
     pal = pal_primary_org,
     values = map_data_orgtype$primary_org_class,
     title = "Primary Organization Type",
