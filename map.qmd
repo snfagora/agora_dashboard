@@ -191,7 +191,7 @@ generate_civic_index_html <- function(df) {
   <strong>Civic Opportunity Index (1–5 scale)</strong>
   <button onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';\" style='background:none; border:none; cursor:pointer; font-size:14px;'>❓</button>
   <div style='display:none; font-size:12px; margin-top:4px;'>
-    This index ranks all counties from 1 (low) to 5 (high) based on civic opportunity scores—derived from counts of volunteering, membership, events, and take-action opportunities.
+    This index ranks counties from 1 (low) to 5 (high) based on the level of civic opportunity available. Each organization gets a score depending on whether it offers volunteering, membership, public events, or take-action activities. We average these to get a score from 0 to 1. Then we add up all the scores in a county, adjust for the county's population size, and sort counties into five equal groups.
   </div><br/>
   {index_boxes}
   
@@ -205,7 +205,7 @@ generate_civic_index_html <- function(df) {
   <strong>Civic Opportunity Composition (organization counts)</strong>
   <button onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';\" style='background:none; border:none; cursor:pointer; font-size:14px;'>❓</button>
   <div style='display:none; font-size:12px; margin-top:4px;'>
-    These bars show the number of organizations in each civic category. Bar lengths are relative to this county’s total civic orgs.
+    These bars show the number of organizations in each civic opportunity category. Bar lengths are relative to this county’s total civic opportunity organizations.
   </div><br/>
   
   <div style='margin-bottom:4px;'>Volunteer organizations
