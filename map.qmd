@@ -558,7 +558,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     baseGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>%
-  hideGroup("Primary Organization Type")  # Hide non-default explicitly
+  hideGroup("Primary Organization Type") %>%  # Hide non-default explicitly
 
   # Dynamic legend toggle logic
   htmlwidgets::onRender("
