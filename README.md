@@ -1,36 +1,95 @@
-# Civic Opportunity Dashboard (work-in-progress)
+---
+title: "README"
+format: html
+---
 
-Developer: Jae Yeon Kim, Milan de Vries 
-Maintainer: Jae Yeon Kim, Milan de Vries
+# 🗺️ MapAgora Dashboard
 
-## Project Structure
+![Version](https://img.shields.io/badge/version-beta-blue)
 
-The project consists of the following key files and directories:
+An interactive visualization of civic opportunities across U.S. counties, built from the MapAgora datasets developed at the [SNF Agora Institute](https://snfagora.jhu.edu/), Johns Hopkins University.
 
-### 1. **`_quarto.yml`**
-- This file contains the configuration settings for the Quarto project.
-- It defines the **website structure** and page links, as well as specifying the format and theme for rendering the dashboard.
-- It also includes metadata like the project type and navbar setup for navigation.
+Developed and maintained by:  
+[Jae Yeon Kim](https://jaeyk.github.io/) & [Milan de Vries](https://snfagora.jhu.edu/person/milan-de-vries/)
 
-### 2. **`index.qmd`**
-- The **landing page** for the dashboard.
-- This file introduces the project, explains the **motivation** behind the dashboard, and provides context on how **civic opportunities** are distributed across the U.S.
-- It includes a summary of the **dataset construction** and **methodology** used to collect data on civic engagement.
-- The page also includes navigation links to the other sections of the dashboard.
+---
 
-### 3. **`map.qmd`**
-- This file contains the code to generate **the interactive map** that visualizes the civic opportunity data.
-- It uses the **`leaflet`** package to create an interactive map that displays civic opportunities at the **county level**.
+## 🚀 Overview
 
-### 4. **`table.qmd`**
-- This file contains the code to generate **the interactive table** that filters and sorts the civic opportunity data.
-- It uses the **`DT`** package to display the table, which allows users to **filter and sort** the data.
+This dashboard provides an interactive interface for exploring the **county-level landscape of civic opportunity** in the United States. It draws from a larger project, *Mapping the Modern Agora (MMA)*, which combines IRS administrative records and scraped web data to construct a scalable measure of civic infrastructure.
 
-### 5. **`raw_data/`**
-- This directory contains the raw data files used in the project.
-- **`cnty_counts_cov.csv`**: A CSV file that contains data on various civic organizations, including their **FIPS code**, **civic opportunity measures**, and **other relevant attributes**.
-- **`counties.rds`** and **`states.rds`**: RDS files that contain shapefiles for U.S. counties and states, which are used to plot the map and ensure geographic accuracy.
+The dashboard includes:
 
-### 6. **`deploy_dashboard.sh`**
-- A **Bash script** that automates the process of **rendering** the Quarto site, **copying the files** to the `docs/` folder, and **pushing the changes** to GitHub.
-- It simplifies the process of updating the live dashboard on **GitHub Pages** by handling the full deployment pipeline in one command.
+- A **leaflet-based map** of civic opportunity indicators  
+- An **interactive data table** for filtering and comparing counties  
+
+📍 This version only includes **county-level aggregates**. For ZIP code–level data and the full organization-level dataset, see the links below.
+
+---
+
+## 🧱 Project Structure
+
+### `index.qmd`  
+Landing page. Includes project background, dataset construction, and links to visualizations and data.
+
+### `map.qmd`  
+Interactive county-level map using `leaflet`. Visualizes civic opportunity index and organization types.
+
+### `table.qmd`  
+Interactive data table using `DT`. Enables filtering, sorting, and exporting of civic opportunity indicators.
+
+### `_quarto.yml`  
+Site configuration and navigation setup for the Quarto project.
+
+### `raw_data/`  
+Raw inputs for map and table generation:  
+- `cnty_counts_cov.csv`: County-level civic indicators  
+- `cnty_civic_org_type.csv`: Organizational type frequencies  
+- `counties.rds` / `states.rds`: Shapefiles for geographic visualization
+
+### `deploy_dashboard.sh`  
+Bash script to render the site and deploy to GitHub Pages (`docs/` folder).
+
+---
+
+## 🌐 Access the Dashboard
+
+- 🗺️ [**Interactive Map**](https://snfagora.github.io/agora_dashboard/map.html)  
+- 📋 [**Interactive Table**](https://snfagora.github.io/agora_dashboard/table.html)
+
+---
+
+## 📂 Data Access
+
+This dashboard uses **only a subset** of the full MapAgora data:
+
+| Dataset | Description |
+|--------|-------------|
+| Dataset 1 | 1.3M+ de-identified nonprofit organizations (organization-level) ❌ *not included here* |
+| Dataset 2 | ZIP and county-level civic opportunity counts ✅ *(only county shown)* |
+| Dataset 3 | ZIP and county-level organizational type breakdowns ✅ *(only county shown)* |
+
+- 🔗 [GitHub Repository](https://github.com/snfagora/american_civic_opportunity_datasets)  
+- 🗃️ [Harvard Dataverse](https://doi.org/10.7910/DVN/IRCA7C)  
+- 📄 Data Paper (*forthcoming*): *MapAgora, Civic Opportunity Datasets for the Study of American Local Politics and Public Policy* by Jae Yeon Kim, Milan de Vries, and Hahrie Han
+
+---
+
+## 📚 References
+
+- **Concept paper**:  
+  ["Civil Society, Realized"](https://journals.sagepub.com/doi/full/10.1177/00027162221077471) — *The ANNALS of the American Academy of Political and Social Science*, 2022  
+  *(Hahrie Han & Jae Yeon Kim)*
+
+- **Empirical paper**:  
+  ["The Unequal Landscape of Civic Opportunity in America"](https://www.nature.com/articles/s41562-023-01743-1) — *Nature Human Behaviour*, 2023  
+  *(Milan de Vries, Jae Yeon Kim, & Hahrie Han)*  
+  [Replication](https://github.com/snfagora/map_civic_opportunity/tree/main) • [Supplement](https://static-content.springer.com/esm/art%3A10.1038%2Fs41562-023-01743-1/MediaObjects/41562_2023_1743_MOESM1_ESM.pdf)
+
+---
+
+## 💡 Contributing & Feedback
+
+This is a **beta release**. We welcome suggestions and contributions.
+
+➡️ Contact: [Jae Yeon Kim](https://jaeyk.github.io/)

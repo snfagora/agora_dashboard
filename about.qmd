@@ -3,6 +3,10 @@ title: "About"
 format: html
 ---
 
-This dashboard is powered by the MapAgora datasets, derived from IRS tax returns of tax-exempt organizations and their websites.
+This dashboard is powered by the **MapAgora** datasets, which are derived from IRS tax returns of tax-exempt organizations and data scraped from their websites. The goal is to map civic infrastructure across the United States.
 
-- Developer and maintainer: [Jae Yeon Kim](https://jaeyk.github.io/) and [Milan de Vries](https://snfagora.jhu.edu/person/milan-de-vries/)
+- **Developed and maintained by**:  
+  [Jae Yeon Kim](https://jaeyk.github.io/) and [Milan de Vries](https://snfagora.jhu.edu/person/milan-de-vries/)
+
+- 💬 **Questions or suggestions?**  
+  Please reach out to [Jae Yeon Kim](https://jaeyk.github.io/).

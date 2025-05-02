@@ -2,19 +2,21 @@ project:
   type: website
 
 website:
-  title: "Agora Dashboard"
+  title: "MapAgora Dashboard"
   navbar:
     left:
       - text: Home
         href: index.qmd
-      - text: Civic Map
+      - text: Civic Opportunity Map
         href: map.qmd  
-      - text: Civic Table
+      - text: Civic Opportunity Table
         href: table.qmd
       - text: About
         href: about.qmd
 
 format:
   html:
-    theme: cosmo
+    theme:
+      light: flatly
+      dark: darkly
     css: styles.css
