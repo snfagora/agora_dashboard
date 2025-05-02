@@ -191,7 +191,7 @@ generate_civic_index_html <- function(df) {
   <strong>Civic Opportunity Index (1–5 scale)</strong>
   <button onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none';\" style='background:none; border:none; cursor:pointer; font-size:14px;'>❓</button>
   <div style='display:none; font-size:12px; margin-top:4px;'>
-    This index ranks counties from 1 (low) to 5 (high) based on the level of civic opportunity available. Each organization gets a score depending on whether it offers volunteering, membership, public events, or take-action activities. We average these to get a score from 0 to 1. Then we add up all the scores in a county, adjust for the county's population size, and sort counties into five equal groups.
+    This index ranks counties from 1 (low) to 5 (high) based on normalized civic opportunity scores. Each organization is scored based on whether it provides volunteering, membership, public events, or take-action opportunities. These four binary indicators (1 if offered, 0 if not) are averaged to create a score between 0 and 1 for each organization. We then sum these scores across all organizations in a county, divide by the county's population size, and split the counties into five equal-sized groups to assign index values.
   </div><br/>
   {index_boxes}
   
