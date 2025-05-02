@@ -104,7 +104,7 @@ map_data_civic <- counties %>%
       TRUE ~ "Bottom 5%"
     )
   ) %>%
-  st_simplify(dTolerance = 0.1)
+  st_simplify(dTolerance = 10)
 
 # Add national and state rankings
 map_data_civic <- map_data_civic %>%
@@ -126,7 +126,7 @@ aggregated_data <- aggregated_data %>%
 map_data_orgtype <- counties %>%
   left_join(aggregated_data, by = c("GEOID" = "fips")) %>%
   st_as_sf() %>%
-  st_simplify(dTolerance = 0.1) %>%
+  st_simplify(dTolerance = 10) %>%
   mutate(
     primary_org_class = factor(
       primary_org_class, 
@@ -148,7 +148,8 @@ demographic_bar <- function(label, value) {
         <div style='background:#888; width:{round(value, 1)}%; height:10px;'></div>
       </div>
       <small>{round(value, 1)}%</small>
-    </div>")
+    </div>
+  ")
 }
 
 # Function to generate popup HTML
@@ -158,17 +159,19 @@ generate_civic_index_html <- function(df) {
 
     if (is.na(row$civic_opp_index)) {
       return(glue::glue("
-      <div style='font-family:sans-serif; font-size:13px; max-width:300px;'>
-        <h4 style='margin-bottom:6px;'>{row$NAMELSAD}, {row$STUSPS}</h4>
-        <p><strong>No civic opportunity data available for this county.</strong></p>
-      </div>"))
+        <div style='font-family:sans-serif; font-size:13px; max-width:300px;'>
+          <h4 style='margin-bottom:6px;'>{row$NAMELSAD}, {row$STUSPS}</h4>
+          <p><strong>No civic opportunity data available for this county.</strong></p>
+        </div>"))
     }
 
+    # Compute bar widths
     v_pct <- round(row$volunteer_sum / row$civic_org_sum * 100, 1)
     m_pct <- round(row$membership_sum / row$civic_org_sum * 100, 1)
     t_pct <- round(row$take_action_sum / row$civic_org_sum * 100, 1)
     e_pct <- round(row$events_sum / row$civic_org_sum * 100, 1)
 
+    # Generate index bars
     index_boxes <- paste0(
       "<div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>",
       paste0(
@@ -194,7 +197,7 @@ generate_civic_index_html <- function(df) {
     This index ranks counties from 1 (low) to 5 (high) based on normalized civic opportunity scores. Each organization is scored based on whether it provides volunteering, membership, public events, or take-action opportunities. These four binary indicators (1 if offered, 0 if not) are averaged to create a score between 0 and 1 for each organization. We then sum these scores across all organizations in a county, divide by the county's population size, and split the counties into five equal-sized groups to assign index values.
   </div><br/>
   {index_boxes}
-  
+
   <strong>Raw Counts</strong><br/>
   <ul style='padding-left: 20px; margin-top: 4px;'>
     <li>Total Civic Opportunity Organizations: <strong>{scales::comma(row$civic_org_sum)}</strong> out of <strong>{scales::comma(row$n)}</strong> nonprofits</li>
@@ -207,28 +210,28 @@ generate_civic_index_html <- function(df) {
   <div style='display:none; font-size:12px; margin-top:4px;'>
     These bars show the number of organizations in each civic opportunity category. Bar lengths are relative to this county’s total civic opportunity organizations.
   </div><br/>
-  
+
   <div style='margin-bottom:4px;'>Volunteer organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#1f77b4; width:{row$volunteer_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
+      <div style='background:#888; width:{v_pct}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$volunteer_sum}</div>
     </div>
   </div>
   <div style='margin-bottom:4px;'>Membership-based organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#ff7f0e; width:{row$membership_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
+      <div style='background:#888; width:{m_pct}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$membership_sum}</div>
     </div>
   </div>
   <div style='margin-bottom:4px;'>Take Action organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#2ca02c; width:{row$take_action_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
+      <div style='background:#888; width:{t_pct}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$take_action_sum}</div>
     </div>
   </div>
   <div style='margin-bottom:8px;'>Event-hosting organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#d62728; width:{row$events_sum / max(1, row$civic_org_sum) * 100}%; height:10px;'></div>
+      <div style='background:#888; width:{e_pct}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$events_sum}</div>
     </div>
   </div>
@@ -240,7 +243,7 @@ generate_civic_index_html <- function(df) {
   {demographic_bar('Without Broadband', row$BROAD)}
   {demographic_bar('Unemployed', row$UNEMP)}
   {demographic_bar('Non-White Share', row$REMNRTY)}
- </div>
+</div>
     ")
   })
 }
@@ -277,34 +280,40 @@ org_colors <- pal_primary_org(levels(map_data_orgtype$primary_org_class))
 names(org_colors) <- levels(map_data_orgtype$primary_org_class)
 
 generate_orgtype_bars <- function(df) {
+  # Ensure only one row per class to avoid duplicates
+  df <- df %>% distinct(class, .keep_all = TRUE)
 
-  paste0(
-    "<div style='font-family:sans-serif; font-size:13px; max-width:300px;'>",
-    glue::glue("<h4 style='margin-bottom:6px;'>{NAMELSAD}, {STUSPS}</h4>"),
-    "<strong>Civic Opportunity Organization Breakdown</strong><br/>",
-    "<small>Colored bar = county share, red line = national share</small><br/>",
-    paste(
-      purrr::map_chr(1:nrow(df), function(i) {
-        cls <- df$class[i]
-        c_pct <- round(df$county_pct[i] * 100, 1)
-        n_pct <- round(df$national_pct[i] * 100, 1)
-        color <- org_colors[[cls]]
-        if (is.null(color)) color <- "#cccccc"
+  county_name <- unique(df$county)[1]
+  state_abbr <- unique(df$STUSPS)[1]
 
-        glue::glue("
-          <div style='margin-bottom:6px;'><strong>{cls}</strong>
-            <div style='background:#eee; width:100%; height:10px; position:relative;'>
-              <div style='background:{color}; width:{c_pct}%; height:10px;'></div>
-              <div style='position:absolute; left:{n_pct}%; top:0; height:10px; border-left:2px solid red;' title='National Share'></div>
-            </div>
-            <small>County: {c_pct}%, US: {n_pct}%</small>
+  bar_html <- paste(
+    purrr::map_chr(1:nrow(df), function(i) {
+      cls <- df$class[i]
+      c_pct <- round(df$county_pct[i] * 100, 1)
+      n_pct <- round(df$national_pct[i] * 100, 1)
+      color <- "#bbb"
+
+      glue::glue("
+        <div style='margin-bottom:6px;'><strong>{cls}</strong>
+          <div style='background:#eee; width:100%; height:10px; position:relative;'>
+            <div style='background:{color}; width:{c_pct}%; height:10px;'></div>
+            <div style='position:absolute; left:{n_pct}%; top:0; height:10px; border-left:2px solid red;' title='National Share'></div>
           </div>
-        ")
-      }),
-      collapse = "\n"
-    ),
-    "</div>"
+          <small>County: {c_pct}%, US: {n_pct}%</small>
+        </div>
+      ")
+    }),
+    collapse = "\n"
   )
+
+  glue::glue("
+    <div style='font-family:sans-serif; font-size:13px; max-width:300px;'>
+      <h4 style='margin-bottom:6px;'>{county_name}, {state_abbr}</h4>
+      <strong>Civic Opportunity Organization Breakdown</strong><br/>
+      <small>Colored bar = county share, red line = national share</small><br/>
+      {bar_html}
+    </div>
+  ")
 }
 
 map_data_orgtype <- map_data_orgtype %>%
@@ -396,8 +405,7 @@ generate_orgtype_bars <- function(df) {
         cls <- df$class[i]
         c_pct <- round(df$county_pct[i] * 100, 1)
         n_pct <- round(df$national_pct[i] * 100, 1)
-        color <- org_colors[[cls]]
-        if (is.null(color)) color <- "#cccccc"
+        color <- "#bbb"
 
         glue::glue("
           <div style='margin-bottom:6px;'><strong>{cls}</strong>
@@ -427,7 +435,7 @@ popup_data <- org_type_pct %>%
   complete(county = map_data_orgtype$NAMELSAD, STUSPS = map_data_orgtype$STUSPS) %>%
   mutate(orgtype_bar_html = ifelse(
     is.na(orgtype_bar_html),
-    "<p><strong>No civic organization type data available for this county.</strong></p>",
+    "<p><strong>No civic opportunity organization type data available for this county.</strong></p>",
     orgtype_bar_html
   ))
 
@@ -445,31 +453,31 @@ composition_bars <- function(df) {
   t_width <- round(df$take_action_sum / max_val * 100, 1)
   e_width <- round(df$events_sum / max_val * 100, 1)
 
-  # Render HTML
+  # Render HTML using a single glue block
   glue::glue("
   <div style='margin-top:6px;'>
     <strong>Civic Opportunity Composition (counts)</strong><br/>
     <div style='margin-bottom:4px;'>Volunteer
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#1f77b4; width:{v_width}%; height:10px;'></div>
+        <div style='background:#888; width:{v_width}%; height:10px;'></div>
         <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$volunteer_sum}</div>
       </div>
     </div>
     <div style='margin-bottom:4px;'>Membership
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#ff7f0e; width:{m_width}%; height:10px;'></div>
+        <div style='background:#888; width:{m_width}%; height:10px;'></div>
         <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$membership_sum}</div>
       </div>
     </div>
     <div style='margin-bottom:4px;'>Take Action
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#2ca02c; width:{t_width}%; height:10px;'></div>
+        <div style='background:#888; width:{t_width}%; height:10px;'></div>
         <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$take_action_sum}</div>
       </div>
     </div>
     <div style='margin-bottom:4px;'>Public Events
       <div style='background:#eee; width:100%; height:10px; position:relative;'>
-        <div style='background:#d62728; width:{e_width}%; height:10px;'></div>
+        <div style='background:#888; width:{e_width}%; height:10px;'></div>
         <div style='position:absolute; right:0; top:0; font-size:11px;'>{df$events_sum}</div>
       </div>
     </div>
@@ -502,7 +510,7 @@ map_data_civic <- map_data_civic %>%
 
 # Create the combined map
 combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE)) %>%
-  addProviderTiles("OpenStreetMap.Mapnik", group = "Base Map") %>%
+  addTiles(urlTemplate = "//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", options = tileOptions(opacity = 0.7)) %>%
 
   # State boundaries
   addPolygons(
@@ -634,6 +642,8 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     options = searchFeaturesOptions(zoom = 7, openPopup = TRUE)
   )
 
+map_data_civic <- map_data_civic %>% st_set_geometry(NULL)
+map_data_orgtype <- map_data_orgtype %>% st_set_geometry(NULL)
 ```
 
 ```{r, echo = FALSE, fig.width = 20, fig.height = 20}
