@@ -110,6 +110,7 @@ htmltools::div(
       scrollCollapse = TRUE,
       fixedHeader = TRUE,
       pageLength = 25,
+      autoWidth = TRUE,
       drawCallback = JS('function() { this.api().columns.adjust(); }'),
       columnDefs = list(
         list(className = 'dt-center', targets = "_all"),
@@ -129,6 +130,12 @@ htmltools::div(
     white-space: nowrap;
   }
 </style>
+
+table.dataTable td {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
 
 <style>
   table.dataTable tbody td:first-child,

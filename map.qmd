@@ -2,6 +2,9 @@
 title: "Civic Opportunity Map"
 format:
   html:
+    include-in-header: 
+      text: |
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
     page-layout: full
     self-contained: false
     theme: default
@@ -651,8 +654,8 @@ html, body {
 }
 
 .layout {
-  display: flex;
-  flex-direction: row;
+  display: flex; !important;
+  flex-direction: column !important; 
   min-height: 1200px;
   height: 100%;
 }
@@ -672,10 +675,10 @@ html, body {
   font-size: 14px;
 }
 
-@media (min-height: 1000px) {
+@media (max-width: 768px) {
   .layout {
     flex-direction: column;
-    height: 90vh;
+    height: auto;
   }
 
   #map-container {
@@ -690,6 +693,7 @@ html, body {
     border-top: 1px solid #ccc;
   }
 }
+
 ")),
     tags$div(
       class = "layout",
