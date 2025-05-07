@@ -69,7 +69,7 @@ df_joined <- df %>%
   select(
     State = state_abbr,
     County = county_name,
-    `Civic Opportunity per Capita` = civic_opp_sum_normalized,
+    `Civic Opportunity per Capita` = round(civic_opp_sum_normalized,0),
     `Civic Opportunity Index` = civic_opp_index,
     Percentile = civic_opp_percentile_label,
     `State Rank` = state_rank,
