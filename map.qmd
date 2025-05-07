@@ -225,10 +225,10 @@ generate_civic_index_html <- function(df) {
     }
 
     # Compute bar widths
-    v_pct <- round(row$volunteer_sum / row$civic_org_sum * 100, 1)
     m_pct <- round(row$membership_sum / row$civic_org_sum * 100, 1)
-    t_pct <- round(row$take_action_sum / row$civic_org_sum * 100, 1)
+    v_pct <- round(row$volunteer_sum / row$civic_org_sum * 100, 1)
     e_pct <- round(row$events_sum / row$civic_org_sum * 100, 1)
+    t_pct <- round(row$take_action_sum / row$civic_org_sum * 100, 1)
 
     # Generate index bars
     index_boxes <- paste0(
@@ -267,28 +267,28 @@ generate_civic_index_html <- function(df) {
     These bars show the number of organizations in each civic opportunity category. Bar lengths are relative to this county’s total civic opportunity organizations.
   </div><br/>
 
-  <div style='margin-bottom:4px;'>Volunteer organizations
-    <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#888; width:{v_pct}%; height:10px;'></div>
-      <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$volunteer_sum}</div>
-    </div>
-  </div>
   <div style='margin-bottom:4px;'>Membership-based organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
       <div style='background:#888; width:{m_pct}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$membership_sum}</div>
     </div>
   </div>
-  <div style='margin-bottom:4px;'>Take Action organizations
+  <div style='margin-bottom:4px;'>Volunteer organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
-      <div style='background:#888; width:{t_pct}%; height:10px;'></div>
-      <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$take_action_sum}</div>
+      <div style='background:#888; width:{v_pct}%; height:10px;'></div>
+      <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$volunteer_sum}</div>
     </div>
   </div>
   <div style='margin-bottom:8px;'>Event-hosting organizations
     <div style='background:#eee; width:100%; height:10px; position:relative;'>
       <div style='background:#888; width:{e_pct}%; height:10px;'></div>
       <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$events_sum}</div>
+    </div>
+  </div>
+  <div style='margin-bottom:4px;'>Take Action organizations
+    <div style='background:#eee; width:100%; height:10px; position:relative;'>
+      <div style='background:#888; width:{t_pct}%; height:10px;'></div>
+      <div style='position:absolute; right:0; top:0; font-size:11px;'>{row$take_action_sum}</div>
     </div>
   </div>
 
