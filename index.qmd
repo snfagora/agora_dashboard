@@ -3,11 +3,11 @@ title: ""
 format: html
 ---
 
-# MapAgora Dashboard
+# MapAgora Chatbot
 
-Welcome to the **MapAgora Dashboard**, an interactive site that
-visualizes the availability, composition, and equity of civic
-opportunities across U.S. counties. This dashboard is part of the
+Welcome to the **MapAgora Chatbot**, an interactive site that answers
+questions about the availability, composition, and equity of civic
+opportunities across U.S. counties. This chatbot is part of the
 [*Mapping the Modern
 Agora*](https://snfagora.jhu.edu/project/mapping-the-modern-agora/)
 project, hosted at the SNF Agora Institute at Johns Hopkins University,
@@ -46,31 +46,26 @@ county is scored along a five-point **Civic Opportunity Index**, with
 additional indicators for organizational composition and community
 demographics.
 
-### About This Dashboard
+### About This Chatbot
 
-This dashboard presents only a **subset** of the full *MapAgora*
+This chatbot presents only a **subset** of the full *MapAgora*
 datasets. It includes:
 
 -   **County-level aggregates** of civic opportunity counts and
     organizational types\
--   **Interactive visualizations** of these county-level measures
+-   **Interactive Q&A** powered by the county-level measures
 
 **Explore the Dashboard**
 
--   🗺️ [**Interactive
-    Map**](https://snfagora.github.io/agora_dashboard/map.html): View
-    county-level civic opportunity scores, see how each place ranks, and
-    examine the types of organizations driving civic access.\
--   📋 [**Interactive
-    Table**](https://snfagora.github.io/agora_dashboard/table.html):
-    Search, filter, and sort civic opportunity indicators across all
-    U.S. counties, with comparisons to state and national benchmarks.
+-   💬 [**Interactive
+    Chatbot**](chatbot.qmd): Ask for county summaries, top/bottom
+    rankings, and organization mix highlights.
 
 **⚠️ Important Note**
 
 It does **not** include either the full **de-identified
 organization-level dataset** of 1.7M+ nonprofits 🏢 or the **ZIP
-code–level aggregates** 📮. This dashboard is limited to **county-level
+code–level aggregates** 📮. This chatbot is limited to **county-level
 data only** 🗺️.
 
 For ZIP-level data and detailed metadata on individual organizations,

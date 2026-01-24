@@ -1,5 +1,9 @@
 project:
   type: website
+  resources:
+    - raw_data/cnty_counts_cov.csv
+    - raw_data/cnty_civic_org_type.csv
+    - raw_data/county_lookup.csv
 
 website:
   title: "MapAgora Dashboard"
@@ -7,12 +11,8 @@ website:
     left:
       - text: Home
         href: index.qmd
-      - text: Where to Start
-        href: where_to_start.qmd
-      - text: Civic Opportunity Map
-        href: map.qmd  
-      - text: Civic Opportunity Table
-        href: table.qmd
+      - text: Civic Opportunity Chatbot
+        href: chatbot.qmd
       - text: About
         href: about.qmd
 

@@ -6,11 +6,10 @@ page-layout: full
 
 <div style="margin-bottom: 1em;">
 [⬅️ Back to Home](index.qmd){.btn .btn-outline-primary}
-[🗺️ Move to Map](map.qmd){.btn .btn-outline-primary}
-[📋 Move to Table](table.qmd){.btn .btn-outline-primary}
+[💬 Open Chatbot](chatbot.qmd){.btn .btn-outline-primary}
 </div>
 
-New to MapAgora? This page offers prompts and reflections to help you begin exploring the dashboard and datasets—whether you're curious about your own county or conducting place-based research.
+New to MapAgora? This page offers prompts and reflections to help you begin exploring the chatbot and datasets—whether you're curious about your own county or conducting place-based research.
 
 ::: {.panel-tabset}
 
@@ -25,10 +24,10 @@ Use the following prompts to guide your exploration:
 
 ### 🔍 Critically Engage with the Data
 
-MapAgora offers a scalable and comprehensive map of America’s civic infrastructure—but no dataset is perfect. This dashboard is an invitation to explore, question, and extend what you see.
+MapAgora offers a scalable and comprehensive map of America’s civic infrastructure—but no dataset is perfect. This chatbot is an invitation to explore, question, and extend what you see.
 
 If you’re working in a specific place, you might:
-- Click into **a few counties** directly on the map,
+- Ask the chatbot about **a few counties** directly,
 - Download the ZIP code–level dataset for **more granular views**, or
 - Use the organization-level dataset to **reconstruct civic opportunity scores at the city level**.
 
