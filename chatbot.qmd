@@ -6,9 +6,7 @@ format:
     self-contained: true
 ---
 
-```{=html}
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
-```
 
 # Ask the Civic Opportunity Chatbot
 
@@ -23,7 +21,6 @@ and national rankings.
 - "Which counties have the lowest civic opportunity per capita?"
 - "Show me the organization mix in Los Angeles County, CA."
 
-```{=html}
 <div class="chatbot-shell">
   <div id="chat-log" class="chatbot-log" aria-live="polite"></div>
   <form id="chat-form" class="chatbot-form">
@@ -35,9 +32,7 @@ and national rankings.
     <p class="chatbot-hint">Tip: include a county + state ("Harris County, TX") or ask for top/bottom counties.</p>
   </form>
 </div>
-```
 
-```{=html}
 <style>
 .chatbot-shell {
   border: 1px solid #e0e0e0;
@@ -138,44 +133,12 @@ and national rankings.
   color: #0f172a;
 }
 </style>
-```
 
-```{=html}
 <script>
 const CHATBOT_STATE = {
   pyodide: null,
   ready: false
 };
-
-function buildFallbackUrl(filename) {
-  const host = window.location.hostname;
-  if (!host.endsWith('github.io')) return null;
-  const owner = host.split('.')[0];
-  const pathParts = window.location.pathname.split('/').filter(Boolean);
-  const repo = pathParts.length ? pathParts[0] : null;
-  if (!repo) return null;
-  return `https://raw.githubusercontent.com/${owner}/${repo}/main/raw_data/${filename}`;
-}
-
-async function fetchWithFallback(path) {
-  const response = await fetch(path);
-  if (response.ok) {
-    return response.text();
-  }
-
-  const filename = path.split('/').pop();
-  const fallbackUrl = buildFallbackUrl(filename);
-  if (!fallbackUrl) {
-    throw new Error(`Unable to load ${path}`);
-  }
-
-  const fallbackResponse = await fetch(fallbackUrl);
-  if (!fallbackResponse.ok) {
-    throw new Error(`Unable to load ${fallbackUrl}`);
-  }
-
-  return fallbackResponse.text();
-}
 
 function addMessage(role, text) {
   const log = document.getElementById('chat-log');
@@ -193,15 +156,13 @@ function addMessage(role, text) {
 
 async function loadChatbot() {
   addMessage('assistant', 'Loading Python data engine...');
-  const pyodide = await loadPyodide({
-    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/'
-  });
+  const pyodide = await loadPyodide();
   CHATBOT_STATE.pyodide = pyodide;
 
   const [countsText, orgText, lookupText] = await Promise.all([
-    fetchWithFallback('raw_data/cnty_counts_cov.csv'),
-    fetchWithFallback('raw_data/cnty_civic_org_type.csv'),
-    fetchWithFallback('raw_data/county_lookup.csv')
+    fetch('raw_data/cnty_counts_cov.csv').then((res) => res.text()),
+    fetch('raw_data/cnty_civic_org_type.csv').then((res) => res.text()),
+    fetch('raw_data/county_lookup.csv').then((res) => res.text())
   ]);
 
   pyodide.globals.set('counts_text', countsText);
@@ -459,4 +420,3 @@ loadChatbot()
     addMessage('assistant', 'Sorry, I could not load the civic opportunity data. Please try again later.');
   });
 </script>
-```
