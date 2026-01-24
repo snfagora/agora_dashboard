@@ -1,0 +1,462 @@
+---
+title: "Civic Opportunity Chatbot"
+format:
+  html:
+    page-layout: full
+    self-contained: true
+---
+
+```{=html}
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+```
+
+# Ask the Civic Opportunity Chatbot
+
+Use this chatbot to explore the **county-level civic opportunity data** shown in the MapAgora dataset.
+It runs entirely in the browser with **Python (Pyodide)** and answers questions about counties, states,
+and national rankings.
+
+**Try questions like:**
+
+- "Tell me about civic opportunity in Cook County, IL."
+- "What are the top 5 counties in North Carolina?"
+- "Which counties have the lowest civic opportunity per capita?"
+- "Show me the organization mix in Los Angeles County, CA."
+
+```{=html}
+<div class="chatbot-shell">
+  <div id="chat-log" class="chatbot-log" aria-live="polite"></div>
+  <form id="chat-form" class="chatbot-form">
+    <label for="chat-input" class="chatbot-label">Ask a question about civic opportunity:</label>
+    <div class="chatbot-input-row">
+      <input id="chat-input" class="chatbot-input" type="text" placeholder="e.g., How does King County, WA rank?" autocomplete="off" required />
+      <button class="chatbot-button" type="submit">Ask</button>
+    </div>
+    <p class="chatbot-hint">Tip: include a county + state ("Harris County, TX") or ask for top/bottom counties.</p>
+  </form>
+</div>
+```
+
+```{=html}
+<style>
+.chatbot-shell {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  max-width: 900px;
+}
+
+.chatbot-log {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 1rem;
+  min-height: 220px;
+  max-height: 360px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  border: 1px solid #e8e8e8;
+}
+
+.chatbot-message {
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.chatbot-message:last-child {
+  margin-bottom: 0;
+}
+
+.chatbot-message strong {
+  min-width: 72px;
+  font-weight: 600;
+  color: #1f2a44;
+}
+
+.chatbot-message p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chatbot-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chatbot-label {
+  font-weight: 600;
+}
+
+.chatbot-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.chatbot-input {
+  flex: 1 1 320px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #c9d2e3;
+  font-size: 1rem;
+}
+
+.chatbot-input:focus {
+  outline: none;
+  border-color: #3b6fc4;
+  box-shadow: 0 0 0 3px rgba(59, 111, 196, 0.2);
+}
+
+.chatbot-button {
+  padding: 0.65rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  background: #3b6fc4;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chatbot-button:hover {
+  background: #2f5aa4;
+}
+
+.chatbot-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #5b6475;
+}
+
+.chatbot-system {
+  color: #364152;
+}
+
+.chatbot-user {
+  color: #0f172a;
+}
+</style>
+```
+
+```{=html}
+<script>
+const CHATBOT_STATE = {
+  pyodide: null,
+  ready: false
+};
+
+function buildFallbackUrl(filename) {
+  const host = window.location.hostname;
+  if (!host.endsWith('github.io')) return null;
+  const owner = host.split('.')[0];
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const repo = pathParts.length ? pathParts[0] : null;
+  if (!repo) return null;
+  return `https://raw.githubusercontent.com/${owner}/${repo}/main/raw_data/${filename}`;
+}
+
+async function fetchWithFallback(path) {
+  const response = await fetch(path);
+  if (response.ok) {
+    return response.text();
+  }
+
+  const filename = path.split('/').pop();
+  const fallbackUrl = buildFallbackUrl(filename);
+  if (!fallbackUrl) {
+    throw new Error(`Unable to load ${path}`);
+  }
+
+  const fallbackResponse = await fetch(fallbackUrl);
+  if (!fallbackResponse.ok) {
+    throw new Error(`Unable to load ${fallbackUrl}`);
+  }
+
+  return fallbackResponse.text();
+}
+
+function addMessage(role, text) {
+  const log = document.getElementById('chat-log');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'chatbot-message';
+  const label = document.createElement('strong');
+  label.textContent = role === 'user' ? 'You' : 'Chatbot';
+  label.className = role === 'user' ? 'chatbot-user' : 'chatbot-system';
+  const content = document.createElement('p');
+  content.textContent = text;
+  wrapper.append(label, content);
+  log.appendChild(wrapper);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function loadChatbot() {
+  addMessage('assistant', 'Loading Python data engine...');
+  const pyodide = await loadPyodide({
+    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/'
+  });
+  CHATBOT_STATE.pyodide = pyodide;
+
+  const [countsText, orgText, lookupText] = await Promise.all([
+    fetchWithFallback('raw_data/cnty_counts_cov.csv'),
+    fetchWithFallback('raw_data/cnty_civic_org_type.csv'),
+    fetchWithFallback('raw_data/county_lookup.csv')
+  ]);
+
+  pyodide.globals.set('counts_text', countsText);
+  pyodide.globals.set('org_text', orgText);
+  pyodide.globals.set('lookup_text', lookupText);
+
+  await pyodide.runPythonAsync(`
+import csv
+import io
+import re
+
+from typing import Dict, List
+
+NUMBER_FORMAT = '{:,.1f}'.format
+
+
+def load_csv(text: str) -> List[dict]:
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+counts_rows = load_csv(counts_text)
+org_rows = load_csv(org_text)
+lookup_rows = load_csv(lookup_text)
+
+state_name_to_abbr = {}
+counties_by_state: Dict[str, List[dict]] = {}
+fips_to_county: Dict[str, dict] = {}
+
+for row in lookup_rows:
+    fips = str(row.get('fips', '')).zfill(5)
+    county_name = row.get('county_name', '')
+    state_abbr = row.get('state_abbr', '')
+    state_name = row.get('state_name', '')
+
+    if state_name and state_abbr:
+        state_name_to_abbr[state_name.lower()] = state_abbr
+
+    if state_abbr:
+        counties_by_state.setdefault(state_abbr, []).append({
+            'county_name': county_name,
+            'fips': fips,
+            'state_abbr': state_abbr
+        })
+
+    if fips:
+        fips_to_county[fips] = {
+            'county_name': county_name,
+            'state_abbr': state_abbr,
+            'state_name': state_name
+        }
+
+counts_by_fips = {}
+for row in counts_rows:
+    fips = str(row.get('FIPS', '')).zfill(5)
+    counts_by_fips[fips] = row
+
+orgs_by_fips: Dict[str, List[dict]] = {}
+for row in org_rows:
+    fips = str(row.get('FIPS', '')).zfill(5)
+    orgs_by_fips.setdefault(fips, []).append({
+        'type': row.get('class', ''),
+        'freq': float(row.get('freq', 0) or 0)
+    })
+
+
+county_regex = re.compile(r"([A-Za-z\s\-']+)\s+(county|parish|borough|census area|municipio)", re.IGNORECASE)
+
+
+def normalize_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value.lower()).strip()
+
+
+def find_state(query: str) -> str | None:
+    cleaned = normalize_text(query)
+    for name, abbr in state_name_to_abbr.items():
+        if name in cleaned:
+            return abbr
+    tokens = re.split(r"\W+", cleaned)
+    for token in tokens:
+        if len(token) == 2 and token.isalpha():
+            return token.upper()
+    return None
+
+
+def find_county(query: str, state_abbr: str | None) -> dict | None:
+    match = county_regex.search(query)
+    if not match:
+        return None
+    county_name = normalize_text(match.group(1))
+    if state_abbr and state_abbr in counties_by_state:
+        for county in counties_by_state[state_abbr]:
+            if normalize_text(county['county_name']) == county_name:
+                return county
+    for county in lookup_rows:
+        if normalize_text(county.get('county_name', '')) == county_name:
+            return county
+    return None
+
+
+def format_number(value: str | float) -> str:
+    try:
+        return NUMBER_FORMAT(float(value))
+    except (TypeError, ValueError):
+        return 'N/A'
+
+
+def format_percent(value: float) -> str:
+    return f"{value * 100:.1f}%"
+
+
+def build_county_summary(county: dict, metrics: dict | None) -> str:
+    if not metrics:
+        return (
+            f"I couldn't find civic opportunity metrics for {county.get('county_name')} "
+            f"County, {county.get('state_abbr')}. Try another county."
+        )
+
+    summary = [f"{county.get('county_name')} County, {county.get('state_abbr')} summary:"]
+    summary.append(
+        f"• Civic opportunity per capita (per 100,000 residents): "
+        f"{format_number(metrics.get('civic_opp_sum_normalized'))}"
+    )
+    summary.append(f"• Civic opportunity index (1–5): {metrics.get('civic_opp_index', 'N/A')}")
+    summary.append(f"• Civic opportunity organizations: {format_number(metrics.get('civic_org_sum'))}")
+    summary.append(f"• Total nonprofits: {format_number(metrics.get('n'))}")
+
+    orgs = orgs_by_fips.get(str(county.get('fips', '')).zfill(5), [])
+    if orgs:
+        total = sum(org['freq'] for org in orgs)
+        top_orgs = sorted(orgs, key=lambda x: x['freq'], reverse=True)[:5]
+        summary.append('• Top organization types:')
+        for org in top_orgs:
+            pct = (org['freq'] / total) if total else 0
+            summary.append(f"  - {org['type']}: {format_percent(pct)}")
+
+    return "\n".join(summary)
+
+
+def sort_by_metric(rows: list[dict], metric: str, descending: bool = True) -> list[dict]:
+    filtered = []
+    for row in rows:
+        value = row.get(metric)
+        try:
+            metric_value = float(value)
+        except (TypeError, ValueError):
+            continue
+        row_copy = dict(row)
+        row_copy['metric_value'] = metric_value
+        filtered.append(row_copy)
+    filtered.sort(key=lambda row: row['metric_value'], reverse=descending)
+    return filtered
+
+
+def build_top_counties_response(state_abbr: str, descending: bool) -> str:
+    rows = [row for row in counts_rows if row.get('state') == state_abbr or row.get('State') == state_abbr]
+    ranked = sort_by_metric(rows, 'civic_opp_sum_normalized', descending=descending)[:5]
+
+    if not ranked:
+        return f"I couldn't find counties for {state_abbr}. Try another state or include a county."
+
+    heading = (
+        f"Highest civic opportunity per capita in {state_abbr}:"
+        if descending
+        else f"Lowest civic opportunity per capita in {state_abbr}:"
+    )
+
+    lines = []
+    for idx, row in enumerate(ranked, start=1):
+        info = fips_to_county.get(str(row.get('FIPS', '')).zfill(5), {})
+        name = info.get('county_name')
+        display = f"{name} County" if name else f"FIPS {row.get('FIPS')}"
+        lines.append(f"{idx}. {display} — {format_number(row.get('civic_opp_sum_normalized'))}")
+
+    return "\n".join([heading, *lines])
+
+
+def build_national_response(descending: bool) -> str:
+    ranked = sort_by_metric(counts_rows, 'civic_opp_sum_normalized', descending=descending)[:5]
+    heading = (
+        'Highest civic opportunity per capita nationwide:'
+        if descending
+        else 'Lowest civic opportunity per capita nationwide:'
+    )
+
+    lines = []
+    for idx, row in enumerate(ranked, start=1):
+        info = fips_to_county.get(str(row.get('FIPS', '')).zfill(5), {})
+        name = info.get('county_name')
+        state_abbr = info.get('state_abbr', '')
+        display = f"{name} County, {state_abbr}" if name else f"FIPS {row.get('FIPS')}"
+        lines.append(f"{idx}. {display} — {format_number(row.get('civic_opp_sum_normalized'))}")
+
+    return "\n".join([heading, *lines])
+
+
+def answer_question(question: str) -> str:
+    normalized = normalize_text(question)
+    wants_top = bool(re.search(r"top|highest|best|most", normalized))
+    wants_bottom = bool(re.search(r"bottom|lowest|least", normalized))
+
+    state_abbr = find_state(question)
+    county = find_county(question, state_abbr)
+
+    if county:
+        metrics = counts_by_fips.get(str(county.get('fips', '')).zfill(5))
+        return build_county_summary(county, metrics)
+
+    if state_abbr and (wants_top or wants_bottom):
+        return build_top_counties_response(state_abbr, descending=not wants_bottom)
+
+    if wants_top or wants_bottom:
+        return build_national_response(descending=not wants_bottom)
+
+    return (
+        'Try asking about a specific county ("Harris County, TX") or ask for '
+        'the highest/lowest counties in a state or nationwide.'
+    )
+  `);
+
+  CHATBOT_STATE.ready = true;
+  addMessage('assistant', 'Hello! Ask me about civic opportunity by county or state.');
+}
+
+function initChatbot() {
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+    addMessage('user', question);
+    input.value = '';
+
+    if (!CHATBOT_STATE.ready) {
+      addMessage('assistant', 'Still loading the Python engine. Please wait a moment.');
+      return;
+    }
+
+    const pyodide = CHATBOT_STATE.pyodide;
+    try {
+      const response = await pyodide.runPythonAsync(`answer_question(${JSON.stringify(question)})`);
+      addMessage('assistant', response);
+    } catch (error) {
+      addMessage('assistant', 'Sorry, I ran into an error answering that. Please try again.');
+    }
+  });
+}
+
+loadChatbot()
+  .then(() => {
+    initChatbot();
+  })
+  .catch(() => {
+    addMessage('assistant', 'Sorry, I could not load the civic opportunity data. Please try again later.');
+  });
+</script>
+```

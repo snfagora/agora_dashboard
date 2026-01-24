@@ -1,9 +1,17 @@
 #!/bin/bash
 
 # Set up variables
-REPO_DIR=$(pwd)
 SITE_DIR="_site"
 DOCS_DIR="docs"
+REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+REMOTE_URL=$(git config --get remote.origin.url || true)
+GITHUB_USER=""
+
+if [[ -n "$REMOTE_URL" ]]; then
+  if [[ "$REMOTE_URL" =~ github.com[:/](.+)/.+(\.git)?$ ]]; then
+    GITHUB_USER="${BASH_REMATCH[1]}"
+  fi
+fi
 
 # Render the Quarto project
 echo "Rendering Quarto project..."
@@ -37,6 +45,10 @@ git push
 
 # Output the GitHub Pages URL
 echo "GitHub Pages site is now live at:"
-echo "https://snfagora.github.io/agora_dashboard/"
+if [[ -n "$GITHUB_USER" ]]; then
+  echo "https://${GITHUB_USER}.github.io/${REPO_NAME}/"
+else
+  echo "https://<your-username>.github.io/${REPO_NAME}/"
+fi
 
 # End of script
