@@ -3,11 +3,11 @@ title: "README"
 format: html
 ---
 
-# 🗺️ MapAgora Dashboard
+# 💬 MapAgora Chatbot
 
 ![Version](https://img.shields.io/badge/version-beta-blue)
 
-An interactive visualization of civic opportunities across U.S. counties, built from the MapAgora datasets developed at the [SNF Agora Institute](https://snfagora.jhu.edu/), Johns Hopkins University.
+An interactive chatbot for exploring civic opportunities across U.S. counties, built from the MapAgora datasets developed at the [SNF Agora Institute](https://snfagora.jhu.edu/), Johns Hopkins University.
 
 Developed and maintained by:  
 [Jae Yeon Kim](https://jaeyk.github.io/) & [Milan de Vries](https://snfagora.jhu.edu/person/milan-de-vries/)
@@ -16,12 +16,11 @@ Developed and maintained by:
 
 ## 🚀 Overview
 
-This dashboard provides an interactive interface for exploring the **county-level landscape of civic opportunity** in the United States. It draws from a larger project, *Mapping the Modern Agora (MMA)*, which combines IRS administrative records and scraped web data to construct a scalable measure of civic infrastructure.
+This chatbot provides an interactive interface for exploring the **county-level landscape of civic opportunity** in the United States. It draws from a larger project, *Mapping the Modern Agora (MMA)*, which combines IRS administrative records and scraped web data to construct a scalable measure of civic infrastructure.
 
-The dashboard includes:
+The chatbot includes:
 
-- A **leaflet-based map** of civic opportunity indicators  
-- An **interactive data table** for filtering and comparing counties  
+- A **browser-based Python (Pyodide)** chatbot that answers county, state, and national questions  
 
 📍 This version only includes **county-level aggregates**. For ZIP code–level data and the full organization-level dataset, see the links below.
 
@@ -32,17 +31,14 @@ The dashboard includes:
 ### `index.qmd`  
 Landing page. Includes project background, dataset construction, and links to visualizations and data.
 
-### `map.qmd`  
-Interactive county-level map using `leaflet`. Visualizes civic opportunity index and organization types.
-
-### `table.qmd`  
-Interactive data table using `DT`. Enables filtering, sorting, and exporting of civic opportunity indicators.
+### `chatbot.qmd`  
+Interactive chatbot running in the browser with Pyodide. Answers questions about civic opportunity indicators.
 
 ### `_quarto.yml`  
 Site configuration and navigation setup for the Quarto project.
 
 ### `raw_data/`  
-Raw inputs for map and table generation:  
+Raw inputs for chatbot responses:  
 - `cnty_counts_cov.csv`: County-level civic indicators  
 - `cnty_civic_org_type.csv`: Organizational type frequencies  
 - `counties.rds` / `states.rds`: Shapefiles for geographic visualization
@@ -52,10 +48,9 @@ Bash script to render the site and deploy to GitHub Pages (`docs/` folder).
 
 ---
 
-## 🌐 Access the Dashboard
+## 🌐 Access the Chatbot
 
-- 🗺️ [**Interactive Map**](https://snfagora.github.io/agora_dashboard/map.html)  
-- 📋 [**Interactive Table**](https://snfagora.github.io/agora_dashboard/table.html)
+- 💬 **Interactive Chatbot** (served from this Quarto site)
 
 ---
 
