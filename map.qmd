@@ -221,13 +221,14 @@ map_data_orgtype <- counties %>%
   st_as_sf() %>%
   st_simplify(dTolerance = 50, preserveTopology = TRUE) %>%
   mutate(
+    primary_org_class = ifelse(is.na(primary_org_class), "No data", primary_org_class),
     primary_org_class = factor(
       primary_org_class,
       levels = c(
         "Religious", "Social & Fraternal", "Youth", "Unions", "Healthcare",
         "Economic", "Education", "Research & Think Tank", "Hobby & Sports",
         "Community", "Foundations", "Professional", "Arts & Cultural",
-        "Housing", "Political", "NA"
+        "Housing", "Political", "No data"
       )
     )
   )
@@ -359,7 +360,7 @@ pal_primary_org <- colorFactor(
   palette = c(
     "darkgreen", "gold", "#FF7F00", "#E41A1C", "#984EA3", "#377EB8",
     "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
-    "#FB9A99", "#B3DE69", "#FF69B4", "#CCCCCC"
+    "#FB9A99", "#B3DE69", "#FF69B4", "lightgrey"
   ),
   domain = levels(map_data_orgtype$primary_org_class),
   na.color = "lightgrey"
@@ -467,13 +468,13 @@ org_levels <- c(
   "Religious", "Social & Fraternal", "Youth", "Unions", "Healthcare",
   "Economic", "Education", "Research & Think Tank", "Hobby & Sports",
   "Community", "Foundations", "Professional", "Arts & Cultural",
-  "Housing", "Political", "NA"
+  "Housing", "Political", "No data"
 )
 
 pal_colors <- c(
   "darkgreen", "gold", "#FF7F00", "#E41A1C", "#984EA3", "#377EB8",
   "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
-  "#FB9A99", "#B3DE69", "#FF69B4", "#CCCCCC"
+  "#FB9A99", "#B3DE69", "#FF69B4", "lightgrey"
 )
 
 org_color_lookup <- setNames(pal_colors, org_levels)
@@ -622,27 +623,7 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     group = "State Boundaries",
     options = pathOptions(clickable = FALSE)
   ) %>%
-  # Add Civic Opportunity layer (this should be the *default* visible layer)
-  addPolygons(
-    data = map_data_civic,
-    fillColor = ~ pal_green(civic_opp_category),
-    fillOpacity = 0.7,
-    color = "#BDBDC1",
-    weight = 1,
-    popup = ~civic_index_bar_html,
-    label = ~paste0(NAMELSAD, ", ", STUSPS),
-    group = "Civic Opportunity Counts"
-  ) %>%
-  # Civic Opportunity legend (explicit colors/labels to ensure match)
-  addLegend(
-    position = "bottomright",
-    colors = c("lightgrey", "#e5f5e0", "#a1d99b", "#74c476", "#31a354", "#006d2c"),
-    labels = c("No data", "1 (Lowest)", "2", "3", "4", "5 (Highest)"),
-    title = "Civic Opportunity Index",
-    group = "Civic Opportunity Counts",
-    className = "info legend civic-legend"
-  ) %>%
-  # Add Primary Org layer (initially hidden)
+  # Add Primary Org layer FIRST (so it's underneath)
   addPolygons(
     data = map_data_orgtype,
     fillColor = ~ pal_primary_org(primary_org_class),
@@ -662,62 +643,87 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
     group = "Primary Organization Type",
     className = "info legend org-legend"
   ) %>%
+  # Add Civic Opportunity layer LAST (so it's on top and default visible)
+  addPolygons(
+    data = map_data_civic,
+    fillColor = ~ pal_green(civic_opp_category),
+    fillOpacity = 0.7,
+    color = "#BDBDC1",
+    weight = 1,
+    popup = ~civic_index_bar_html,
+    label = ~paste0(NAMELSAD, ", ", STUSPS),
+    group = "Civic Opportunity Counts"
+  ) %>%
+  # Civic Opportunity legend
+  addLegend(
+    position = "bottomright",
+    colors = c("#e5f5e0", "#a1d99b", "#74c476", "#31a354", "#006d2c", "lightgrey"),
+    labels = c("1 (Lowest)", "2", "3", "4", "5 (Highest)", "No data"),
+    title = "Civic Opportunity Index",
+    group = "Civic Opportunity Counts",
+    className = "info legend civic-legend"
+  ) %>%
   # Layer controls (default = Civic)
   addLayersControl(
   baseGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
   options = layersControlOptions(collapsed = FALSE)
 ) %>%
   hideGroup("Primary Organization Type") %>%
-  showGroup("Civic Opportunity Counts")
-
-
+  showGroup("Civic Opportunity Counts") %>%
   # JS to dynamically switch legends
   htmlwidgets::onRender("
-function(el, x) {
-  var map = this;
-
-  // Legend elements
-  var civicLegend = document.querySelector('.civic-legend');
-  var orgLegend   = document.querySelector('.org-legend');
-
-  function updateLegends(activeLayer) {
-    if (!civicLegend || !orgLegend) return;
-
-    if (activeLayer === 'Civic Opportunity Counts') {
-      civicLegend.style.display = 'block';
-      orgLegend.style.display   = 'none';
-    } else if (activeLayer === 'Primary Organization Type') {
-      civicLegend.style.display = 'none';
-      orgLegend.style.display   = 'block';
+    function(el, x) {
+      var map = this;
+      var civicLegend = document.querySelector('.civic-legend');
+      var orgLegend = document.querySelector('.org-legend');
+      function updateLegends(activeLayer) {
+        if (activeLayer === 'Civic Opportunity Counts') {
+          civicLegend.style.display = 'block';
+          orgLegend.style.display = 'none';
+        } else if (activeLayer === 'Primary Organization Type') {
+          civicLegend.style.display = 'none';
+          orgLegend.style.display = 'block';
+        }
+      }
+      // Ensure Civic Opportunity Counts is the default on load
+      map.whenReady(function() {
+        setTimeout(function() {
+          // Hide org legend, show civic legend
+          if (orgLegend) orgLegend.style.display = 'none';
+          if (civicLegend) civicLegend.style.display = 'block';
+          // Find and click the Civic Opportunity radio button to activate that layer
+          var radioInputs = document.querySelectorAll('.leaflet-control-layers-base input');
+          radioInputs.forEach(function(input) {
+            var label = input.nextSibling.textContent.trim();
+            if (label === 'Civic Opportunity Counts' && !input.checked) {
+              input.click();
+            }
+          });
+        }, 100);
+      });
+      map.on('baselayerchange', function(e) {
+        updateLegends(e.name);
+      });
     }
-  }
-
-  // Sidebar updater
-  function updateSidebar(content) {
-    var sidebar = document.getElementById('popup-sidebar');
-    if (sidebar) sidebar.innerHTML = content;
-  }
-
-  map.whenReady(function() {
-    // Force initial legend state
-    updateLegends('Civic Opportunity Counts');
-
-    // Rebind click handlers after everything is drawn
-    map.eachLayer(function(layer) {
-      if (layer.getPopup && layer.getPopup()) {
-        layer.on('click', function() {
-          var popup = layer.getPopup();
-          if (popup) updateSidebar(popup.getContent());
+  ") %>%
+  # JS to redirect popup to sidebar
+  htmlwidgets::onRender("
+    function(el, x) {
+      var map = this;
+      function updateSidebar(content) {
+        var sidebar = document.getElementById('popup-sidebar');
+        if (sidebar) sidebar.innerHTML = content;
+      }
+      map.eachLayer(function(layer) {
+        if (layer.getPopup && layer.getPopup()) {
+          var popupContent = layer.getPopup().getContent();
+          layer.unbindPopup();
+          layer.on('click', function() {
+            updateSidebar(popupContent);
           });
         }
       });
-    });
-
-  // Switch legend when base layer changes
-  map.on('baselayerchange', function(e) {
-    updateLegends(e.name);
-    });
-  }
+    }
   ") %>%
   # Fit map to US bounds
   fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49) %>%
