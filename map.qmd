@@ -637,8 +637,17 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
   # Primary Org legend
   addLegend(
     position = "bottomright",
-    pal = pal_primary_org,
-    values = map_data_orgtype$primary_org_class,
+    colors = c(
+      "darkgreen", "gold", "#FF7F00", "#E41A1C", "#984EA3", "#377EB8",
+      "#4DAF4A", "#A65628", "#F781BF", "#999999", "#FFD700", "#1E90FF",
+      "#FB9A99", "#B3DE69", "#FF69B4", "lightgrey"
+    ),
+    labels = c(
+      "Religious", "Social & Fraternal", "Youth", "Unions", "Healthcare",
+      "Economic", "Education", "Research & Think Tank", "Hobby & Sports",
+      "Community", "Foundations", "Professional", "Arts & Cultural",
+      "Housing", "Political", "No data"
+    ),
     title = "Primary Organization Type",
     group = "Primary Organization Type",
     className = "info legend org-legend"
