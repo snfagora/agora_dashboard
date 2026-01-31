@@ -664,52 +664,60 @@ combined_map <- leaflet(options = leafletOptions(minZoom = 3, zoomControl = TRUE
   ) %>%
   # Layer controls (default = Civic)
   addLayersControl(
-    baseGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
-    options = layersControlOptions(collapsed = FALSE)
-  ) %>%
-  hideGroup("Primary Organization Type") %>% # <-- this hides the *non-default* layer
+  baseGroups = c("Civic Opportunity Counts", "Primary Organization Type"),
+  options = layersControlOptions(collapsed = FALSE)
+) %>%
+  hideGroup("Primary Organization Type") %>%
+  showGroup("Civic Opportunity Counts")
+
 
   # JS to dynamically switch legends
   htmlwidgets::onRender("
-    function(el, x) {
-      var map = this;
-      var civicLegend = document.querySelector('.civic-legend');
-      var orgLegend = document.querySelector('.org-legend');
-      function updateLegends(activeLayer) {
-        if (activeLayer === 'Civic Opportunity Counts') {
-          civicLegend.style.display = 'block';
-          orgLegend.style.display = 'none';
-        } else if (activeLayer === 'Primary Organization Type') {
-          civicLegend.style.display = 'none';
-          orgLegend.style.display = 'block';
-        }
-      }
-      map.whenReady(function() {
-        updateLegends('Civic Opportunity Counts');
-      });
-      map.on('baselayerchange', function(e) {
-        updateLegends(e.name);
-      });
+function(el, x) {
+  var map = this;
+
+  // Legend elements
+  var civicLegend = document.querySelector('.civic-legend');
+  var orgLegend   = document.querySelector('.org-legend');
+
+  function updateLegends(activeLayer) {
+    if (!civicLegend || !orgLegend) return;
+
+    if (activeLayer === 'Civic Opportunity Counts') {
+      civicLegend.style.display = 'block';
+      orgLegend.style.display   = 'none';
+    } else if (activeLayer === 'Primary Organization Type') {
+      civicLegend.style.display = 'none';
+      orgLegend.style.display   = 'block';
     }
-  ") %>%
-  # JS to redirect popup to sidebar
-  htmlwidgets::onRender("
-    function(el, x) {
-      var map = this;
-      function updateSidebar(content) {
-        var sidebar = document.getElementById('popup-sidebar');
-        if (sidebar) sidebar.innerHTML = content;
-      }
-      map.eachLayer(function(layer) {
-        if (layer.getPopup && layer.getPopup()) {
-          var popupContent = layer.getPopup().getContent();
-          layer.unbindPopup();
-          layer.on('click', function() {
-            updateSidebar(popupContent);
+  }
+
+  // Sidebar updater
+  function updateSidebar(content) {
+    var sidebar = document.getElementById('popup-sidebar');
+    if (sidebar) sidebar.innerHTML = content;
+  }
+
+  map.whenReady(function() {
+    // Force initial legend state
+    updateLegends('Civic Opportunity Counts');
+
+    // Rebind click handlers after everything is drawn
+    map.eachLayer(function(layer) {
+      if (layer.getPopup && layer.getPopup()) {
+        layer.on('click', function() {
+          var popup = layer.getPopup();
+          if (popup) updateSidebar(popup.getContent());
           });
         }
       });
-    }
+    });
+
+  // Switch legend when base layer changes
+  map.on('baselayerchange', function(e) {
+    updateLegends(e.name);
+    });
+  }
   ") %>%
   # Fit map to US bounds
   fitBounds(lng1 = -125, lat1 = 24, lng2 = -66.9, lat2 = 49) %>%
