@@ -1,0 +1,139 @@
+---
+title: "Community Uses"
+format: html
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+# How Others Are Using MapAgora Data
+
+We love hearing how researchers, practitioners, and organizations are using the MapAgora datasets! This page showcases approved submissions from our community and provides a way for you to share your own work.
+
+---
+
+## Share Your Use Case
+
+If you've used the MapAgora data in your research, teaching, policy work, or other projects, we'd love to hear about it. Submit the form below, and after review, your use case may be featured on this page.
+
+**Submission Process:**
+
+1. Fill out the form below with your information
+2. Your submission will be sent to the maintainer (jaekim@unc.edu) for review
+3. Once approved, your use case will appear in the table below
+
+::: {.callout-note}
+## Note
+All submissions are reviewed before being published. Please ensure your submission is appropriate and accurately describes how you used the data.
+:::
+
+### Submit Your Use Case
+
+```{=html}
+<form action="https://formspree.io/f/xkozpkeg" method="POST" style="max-width: 600px; margin: 20px 0;">
+  <div style="margin-bottom: 15px;">
+    <label for="name" style="display: block; margin-bottom: 5px; font-weight: bold;">Your Name *</label>
+    <input type="text" id="name" name="name" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label for="email" style="display: block; margin-bottom: 5px; font-weight: bold;">Email Address *</label>
+    <input type="email" id="email" name="email" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    <small style="color: #666;">Your email will not be published, only used for follow-up if needed.</small>
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label for="organization" style="display: block; margin-bottom: 5px; font-weight: bold;">Organization/Affiliation *</label>
+    <input type="text" id="organization" name="organization" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label for="use_case" style="display: block; margin-bottom: 5px; font-weight: bold;">How did you use the MapAgora data? *</label>
+    <textarea id="use_case" name="use_case" required rows="5" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Describe your project, research question, or application..."></textarea>
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label for="url" style="display: block; margin-bottom: 5px; font-weight: bold;">Project URL (optional)</label>
+    <input type="url" id="url" name="url" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="https://...">
+    <small style="color: #666;">Link to paper, website, or repository if available.</small>
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <label style="display: flex; align-items: center; gap: 8px;">
+      <input type="checkbox" name="consent" required>
+      <span>I consent to having my name, organization, and use case description published on this website.</span>
+    </label>
+  </div>
+
+  <button type="submit" style="background-color: #2c3e50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">Submit</button>
+</form>
+```
+
+---
+
+## Use Cases
+
+Below are the community submissions. Thank you to everyone who has shared their work!
+
+```{r}
+#| label: load-packages
+library(tidyverse)
+library(DT)
+library(here)
+```
+
+```{r}
+#| label: load-data
+
+# Load approved community uses
+uses_file <- here("raw_data", "community_uses.csv")
+
+if (file.exists(uses_file)) {
+  community_uses <- read_csv(uses_file, show_col_types = FALSE)
+
+  # Check if there are any real entries (not just the example)
+  if (nrow(community_uses) > 0) {
+    # Format the data for display
+    display_data <- community_uses %>%
+      mutate(
+        # Create clickable links if URL exists
+        Project = ifelse(
+          !is.na(url) & url != "",
+          paste0('<a href="', url, '" target="_blank">View Project</a>'),
+          "—"
+        ),
+        # Format date
+        `Date Added` = format(as.Date(date_approved), "%B %Y")
+      ) %>%
+      select(
+        Name = name,
+        Organization = organization,
+        `Use Case` = use_case,
+        Project,
+        `Date Added`
+      )
+
+    DT::datatable(
+      display_data,
+      escape = FALSE,  # Allow HTML links
+      options = list(
+        pageLength = 10,
+        dom = 'frtip',
+        scrollX = TRUE,
+        columnDefs = list(
+          list(width = '150px', targets = c(0, 1)),
+          list(width = '400px', targets = 2),
+          list(width = '100px', targets = c(3, 4))
+        )
+      ),
+      rownames = FALSE,
+      class = 'display'
+    )
+  } else {
+    cat("No approved submissions yet. Be the first to share how you're using MapAgora data!")
+  }
+} else {
+  cat("No approved submissions yet. Be the first to share how you're using MapAgora data!")
+}
+```
