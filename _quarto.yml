@@ -13,6 +13,8 @@ website:
         href: map.qmd  
       - text: Civic Opportunity Table
         href: table.qmd
+      - text: Community Uses
+        href: community_uses.qmd
       - text: About
         href: about.qmd
 
@@ -21,4 +23,4 @@ format:
     theme:
       light: flatly
       dark: darkly
-    css: styles.css
+    css: style.css

@@ -65,6 +65,9 @@ datasets. It includes:
     Table**](https://snfagora.github.io/agora_dashboard/table.html):
     Search, filter, and sort civic opportunity indicators across all
     U.S. counties, with comparisons to state and national benchmarks.
+-   🤝 [**Community
+    Uses**](https://snfagora.github.io/agora_dashboard/community_uses.html):
+    See how others are using MapAgora data and share your own projects.
 
 **⚠️ Important Note**
 

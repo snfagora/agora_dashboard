@@ -20,8 +20,9 @@ This dashboard provides an interactive interface for exploring the **county-leve
 
 The dashboard includes:
 
-- A **leaflet-based map** of civic opportunity indicators  
-- An **interactive data table** for filtering and comparing counties  
+- A **leaflet-based map** of civic opportunity indicators
+- An **interactive data table** for filtering and comparing counties
+- A **community uses** page where users can submit and browse how others are using the data  
 
 📍 This version only includes **county-level aggregates**. For ZIP code–level data and the full organization-level dataset, see the links below.
 
@@ -38,7 +39,10 @@ Interactive county-level map using `leaflet`. Visualizes civic opportunity index
 ### `table.qmd`  
 Interactive data table using `DT`. Enables filtering, sorting, and exporting of civic opportunity indicators.
 
-### `_quarto.yml`  
+### `community_uses.qmd`
+Community submissions page. Users can submit how they've used the data via a form; approved submissions are displayed in a table.
+
+### `_quarto.yml`
 Site configuration and navigation setup for the Quarto project.
 
 ### `raw_data/`  
@@ -54,8 +58,9 @@ Bash script to render the site and deploy to GitHub Pages (`docs/` folder).
 
 ## 🌐 Access the Dashboard
 
-- 🗺️ [**Interactive Map**](https://snfagora.github.io/agora_dashboard/map.html)  
+- 🗺️ [**Interactive Map**](https://snfagora.github.io/agora_dashboard/map.html)
 - 📋 [**Interactive Table**](https://snfagora.github.io/agora_dashboard/table.html)
+- 🤝 [**Community Uses**](https://snfagora.github.io/agora_dashboard/community_uses.html)
 
 ---
 
