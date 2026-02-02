@@ -1,0 +1,106 @@
+/* Layout */
+.layout-wrapper {
+    display: flex;
+    height: calc(100vh - 56px);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+/* Details Panel */
+.details-panel {
+    flex: 1;
+    padding: 20px;
+    border-right: 2px solid #ccc;
+    overflow-y: auto;
+    min-width: 300px;
+    max-width: 400px;
+    background: white;
+    z-index: 1000;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+/* Map Panel */
+.map-panel {
+    flex: 2;
+    position: relative;
+    overflow: hidden;
+}
+
+#map-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* Error Messages */
+.error-message {
+    padding: 1rem;
+    background-color: #fee;
+    border: 1px solid #fcc;
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+/* County Details Styling */
+#county-details h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+#county-details hr {
+    border: 0;
+    height: 1px;
+    background: #ddd;
+    margin: 1rem 0;
+}
+
+#county-details h4 {
+    color: #666;
+    margin: 1rem 0 0.5rem;
+}
+
+#county-details p {
+    margin: 0.5rem 0;
+    line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .layout-wrapper {
+        flex-direction: column;
+    }
+    
+    .details-panel {
+        max-width: 100%;
+        border-right: none;
+        border-bottom: 2px solid #ccc;
+    }
+}
+
+/* Map Controls */
+.leaflet-control-layers {
+    background: white;
+    padding: 6px 8px;
+    border-radius: 4px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+
+.leaflet-control-layers label {
+    margin-bottom: 5px;
+}
+
+/* Loading State */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
